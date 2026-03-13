@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['src/**', 'container/**', 'launchd/**', 'CLAUDE.md']
+    paths: ['mini_py_nanoclaw/**', 'README.md', 'README_py.md']
 
 jobs:
   update-tokens:
@@ -27,13 +27,13 @@ jobs:
       - uses: ./repo-tokens
         id: tokens
         with:
-          include: 'src/**/*.ts container/agent-runner/src/**/*.ts container/Dockerfile container/build.sh launchd/com.nanoclaw.plist CLAUDE.md'
-          exclude: 'src/**/*.test.ts'
+          include: 'mini_py_nanoclaw/**/*.py container/Dockerfile container/build.sh setup.sh README_py.md'
+          exclude: 'tests_py/**/*.py'
           badge-path: 'repo-tokens/badge.svg'
 
       - name: Commit if changed
         run: |
-          git add README.md repo-tokens/badge.svg
+          git add README.md README_py.md repo-tokens/badge.svg
           git diff --cached --quiet && exit 0
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

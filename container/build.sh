@@ -1,6 +1,4 @@
 #!/bin/bash
-# Build the NanoClaw agent container image
-
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -10,7 +8,7 @@ IMAGE_NAME="nanoclaw-agent"
 TAG="${1:-latest}"
 CONTAINER_RUNTIME="${CONTAINER_RUNTIME:-docker}"
 
-echo "Building NanoClaw agent container image..."
+echo "Building NanoClaw Python agent container image..."
 echo "Image: ${IMAGE_NAME}:${TAG}"
 
 ${CONTAINER_RUNTIME} build -t "${IMAGE_NAME}:${TAG}" .

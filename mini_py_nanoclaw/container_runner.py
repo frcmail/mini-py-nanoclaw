@@ -4,17 +4,22 @@ import asyncio
 import json
 import os
 import shlex
+import sys
+import uuid
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Awaitable, Callable, Optional
 
 from .config import CONTAINER_TIMEOUT
 from .group_folder import resolve_group_ipc_path
+from .mount_security import validate_additional_mounts
 from .types import RegisteredGroup
 
 OUTPUT_START_MARKER = "---NANOCLAW_OUTPUT_START---"
 OUTPUT_END_MARKER = "---NANOCLAW_OUTPUT_END---"
-DEFAULT_AGENT_COMMAND = os.getenv("NANOCLAW_AGENT_COMMAND", "python3 -m mini_py_nanoclaw.simple_agent")
+DEFAULT_AGENT_COMMAND = os.getenv(
+    "NANOCLAW_AGENT_COMMAND",
+    f"{sys.executable} -m mini_py_nanoclaw.agent_runner",
+)
 
 
 @dataclass
@@ -89,9 +94,17 @@ async def run_container_agent(
         stderr=asyncio.subprocess.PIPE,
     )
 
-    container_name = f"nanoclaw-py-{group.folder}-{int(asyncio.get_running_loop().time() * 1000)}"
+    container_name = f"nanoclaw-py-{group.folder}-{uuid.uuid4().hex[:8]}"
     if on_process is not None:
         on_process(proc, container_name)
+
+    if group.container_config and group.container_config.additional_mounts:
+        # Validate mounts early to enforce security policy even in local-run mode.
+        _ = validate_additional_mounts(
+            group.container_config.additional_mounts,
+            group.name,
+            bool(group.is_main),
+        )
 
     payload = json.dumps(
         {

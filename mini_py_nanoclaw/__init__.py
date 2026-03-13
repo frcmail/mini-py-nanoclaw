@@ -1,5 +1,3 @@
-"""Python rewrite of NanoClaw core modules."""
+"""Pure-Python NanoClaw runtime package."""
 
-from .app import NanoClawApp
-
-__all__ = ["NanoClawApp"]
+__all__ = []

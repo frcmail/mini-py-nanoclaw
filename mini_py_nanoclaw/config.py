@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
+import platform
 import re
+import socket
 from datetime import datetime
 from pathlib import Path
 
@@ -50,6 +52,32 @@ CONTAINER_MAX_OUTPUT_SIZE = _as_int(os.getenv("CONTAINER_MAX_OUTPUT_SIZE"), 1048
 CREDENTIAL_PROXY_PORT = _as_int(os.getenv("CREDENTIAL_PROXY_PORT"), 3001)
 IDLE_TIMEOUT = _as_int(os.getenv("IDLE_TIMEOUT"), 1800000)
 MAX_CONCURRENT_CONTAINERS = max(1, _as_int(os.getenv("MAX_CONCURRENT_CONTAINERS"), 5))
+CONTAINER_RUNTIME_BIN = os.getenv("CONTAINER_RUNTIME_BIN", "docker")
+CONTAINER_HOST_GATEWAY = os.getenv("CONTAINER_HOST_GATEWAY", "host.docker.internal")
 
 TRIGGER_PATTERN = re.compile(rf"^@{re.escape(ASSISTANT_NAME)}\\b", re.IGNORECASE)
 TIMEZONE = os.getenv("TZ") or str(datetime.now().astimezone().tzinfo or "UTC")
+
+
+def _detect_proxy_bind_host() -> str:
+    env_override = os.getenv("CREDENTIAL_PROXY_HOST")
+    if env_override:
+        return env_override
+
+    if platform.system().lower() == "darwin":
+        return "127.0.0.1"
+
+    if Path("/proc/sys/fs/binfmt_misc/WSLInterop").exists():
+        return "127.0.0.1"
+
+    # Best effort for Linux: bind docker bridge if available.
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 80))
+            _ = s.getsockname()[0]
+    except OSError:
+        pass
+    return "0.0.0.0"
+
+
+PROXY_BIND_HOST = _detect_proxy_bind_host()

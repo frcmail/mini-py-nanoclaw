@@ -4,20 +4,23 @@ Personal Claude assistant. See [README.md](README.md) for philosophy and setup. 
 
 ## Quick Context
 
-Single Node.js process with skill-based channel system. Channels (WhatsApp, Telegram, Slack, Discord, Gmail) are skills that self-register at startup. Messages route to Claude Agent SDK running in containers (Linux VMs). Each group has isolated filesystem and memory.
+Single Python process with a pluggable channel registry. Core channels include `local-file`, `cli-stdio`, and `webhook-http`. Messages route to Python container runner/agent runtime with per-group filesystem and memory isolation.
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `src/index.ts` | Orchestrator: state, message loop, agent invocation |
-| `src/channels/registry.ts` | Channel registry (self-registration at startup) |
-| `src/ipc.ts` | IPC watcher and task processing |
-| `src/router.ts` | Message formatting and outbound routing |
-| `src/config.ts` | Trigger pattern, paths, intervals |
-| `src/container-runner.ts` | Spawns agent containers with mounts |
-| `src/task-scheduler.ts` | Runs scheduled tasks |
-| `src/db.ts` | SQLite operations |
+| `mini_py_nanoclaw/app.py` | Orchestrator: state, polling loop, agent invocation |
+| `mini_py_nanoclaw/channels/registry.py` | Channel registry |
+| `mini_py_nanoclaw/ipc.py` | IPC watcher and task processing |
+| `mini_py_nanoclaw/router.py` | Message formatting and outbound routing |
+| `mini_py_nanoclaw/config.py` | Trigger pattern, paths, intervals |
+| `mini_py_nanoclaw/container_runner.py` | Agent runner interface + output marker parsing |
+| `mini_py_nanoclaw/task_scheduler.py` | Scheduled task engine |
+| `mini_py_nanoclaw/db.py` | SQLite operations |
+| `mini_py_nanoclaw/setup/` | Python setup steps and status output |
+| `mini_py_nanoclaw/agent_runner.py` | Container-side Python agent runtime |
+| `mini_py_nanoclaw/mcp_stdio.py` | Container-side Python MCP stdio service |
 | `groups/{name}/CLAUDE.md` | Per-group memory (isolated) |
 | `container/skills/agent-browser.md` | Browser automation tool (available to all agents via Bash) |
 
@@ -37,8 +40,9 @@ Single Node.js process with skill-based channel system. Channels (WhatsApp, Tele
 Run commands directly—don't tell the user to run them.
 
 ```bash
-npm run dev          # Run with hot reload
-npm run build        # Compile TypeScript
+python -m mini_py_nanoclaw                        # Start service
+python -m mini_py_nanoclaw.setup --step verify    # Run setup verification step
+python -m pytest tests_py                         # Run Python tests
 ./container/build.sh # Rebuild agent container
 ```
 
@@ -57,7 +61,9 @@ systemctl --user restart nanoclaw
 
 ## Troubleshooting
 
-**WhatsApp not connecting after upgrade:** WhatsApp is now a separate channel fork, not bundled in core. Run `/add-whatsapp` (or `git remote add whatsapp https://github.com/qwibitai/nanoclaw-whatsapp.git && git fetch whatsapp main && (git merge whatsapp/main || { git checkout --theirs package-lock.json && git add package-lock.json && git merge --continue; }) && npm run build`) to install it. Existing auth credentials and groups are preserved.
+**Webhook channel returns 401:** set `NANOCLAW_WEBHOOK_TOKEN` and send `Authorization: Bearer <token>` on `POST /inbound`.
+
+**No channel receives messages:** verify `NANOCLAW_CHANNELS` (comma-separated), for example `local-file,cli-stdio,webhook-http`.
 
 ## Container Build Cache
 

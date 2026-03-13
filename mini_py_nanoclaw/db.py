@@ -9,7 +9,7 @@ from typing import Any
 
 from .config import ASSISTANT_NAME, DATA_DIR, STORE_DIR
 from .group_folder import is_valid_group_folder
-from .types import ContainerConfig, NewMessage, RegisteredGroup, ScheduledTask, TaskRunLog
+from .types import AdditionalMount, ContainerConfig, NewMessage, RegisteredGroup, ScheduledTask, TaskRunLog
 
 
 class NanoClawDB:
@@ -464,7 +464,26 @@ class NanoClawDB:
         if raw_cfg:
             try:
                 cfg = json.loads(str(raw_cfg))
-                config = ContainerConfig(timeout=cfg.get("timeout"))
+                raw_mounts = cfg.get("additionalMounts") or cfg.get("additional_mounts") or []
+                mounts: list[AdditionalMount] = []
+                if isinstance(raw_mounts, list):
+                    for mount in raw_mounts:
+                        if not isinstance(mount, dict):
+                            continue
+                        host_path = mount.get("hostPath") or mount.get("host_path")
+                        if not isinstance(host_path, str):
+                            continue
+                        mounts.append(
+                            AdditionalMount(
+                                host_path=host_path,
+                                container_path=mount.get("containerPath") or mount.get("container_path"),
+                                readonly=bool(mount.get("readonly", True)),
+                            )
+                        )
+                config = ContainerConfig(
+                    timeout=cfg.get("timeout"),
+                    additional_mounts=mounts or None,
+                )
             except json.JSONDecodeError:
                 config = None
 

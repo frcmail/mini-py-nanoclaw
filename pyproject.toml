@@ -3,10 +3,14 @@ name = "mini-py-nanoclaw"
 version = "0.1.0"
 description = "Python rewrite of NanoClaw core modules"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 dependencies = [
   "croniter==2.0.7",
 ]
+
+[project.scripts]
+nanoclaw = "mini_py_nanoclaw.__main__:main"
+nanoclaw-setup = "mini_py_nanoclaw.setup.__main__:main"
 
 [project.optional-dependencies]
 dev = [

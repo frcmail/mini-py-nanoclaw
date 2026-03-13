@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import itertools
 import json
-import uuid
+import threading
+import time
 from pathlib import Path
 
 from .group_folder import resolve_group_ipc_path
+
+_IPC_SEQUENCE = itertools.count()
+_IPC_LOCK = threading.Lock()
 
 
 def _input_dir(group_folder: str) -> Path:
@@ -14,9 +19,16 @@ def _input_dir(group_folder: str) -> Path:
     return input_dir
 
 
+def _ordered_filename() -> str:
+    ts = time.time_ns()
+    with _IPC_LOCK:
+        seq = next(_IPC_SEQUENCE)
+    return f"{ts:020d}-{seq:08d}.json"
+
+
 def write_ipc_json(directory: Path, payload: dict) -> Path:
     directory.mkdir(parents=True, exist_ok=True)
-    filename = f"{uuid.uuid4().hex}.json"
+    filename = _ordered_filename()
     path = directory / filename
     tmp = directory / f"{filename}.tmp"
     tmp.write_text(json.dumps(payload, ensure_ascii=True), encoding="utf-8")

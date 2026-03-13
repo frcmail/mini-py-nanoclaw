@@ -18,10 +18,9 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-python@v5
         with:
-          node-version: 20
-          cache: npm
+          python-version: '3.11'
 
       - name: Configure git
         run: |
@@ -34,7 +33,6 @@ jobs:
           FAILED=""
           SUCCEEDED=""
 
-          # List all remote skill branches
           SKILL_BRANCHES=$(git branch -r --list 'origin/skill/*' | sed 's|origin/||' | xargs)
 
           if [ -z "$SKILL_BRANCHES" ]; then
@@ -44,56 +42,34 @@ jobs:
 
           for BRANCH in $SKILL_BRANCHES; do
             SKILL_NAME=$(echo "$BRANCH" | sed 's|skill/||')
-            echo ""
             echo "=== Processing $BRANCH ==="
 
-            # Checkout the skill branch
             git checkout -B "$BRANCH" "origin/$BRANCH"
 
-            # Attempt merge
             if ! git merge main --no-edit; then
-              echo "::warning::Merge conflict in $BRANCH"
               git merge --abort
               FAILED="$FAILED $SKILL_NAME"
               continue
             fi
 
-            # Check if there's anything new to push
             if git diff --quiet "origin/$BRANCH"; then
-              echo "$BRANCH is already up to date with main."
               SUCCEEDED="$SUCCEEDED $SKILL_NAME"
               continue
             fi
 
-            # Install deps and validate
-            npm ci
+            python -m pip install --upgrade pip
+            pip install croniter==2.0.7 pytest==7.4.4 pytest-asyncio==0.23.8
 
-            if ! npm run build; then
-              echo "::warning::Build failed for $BRANCH"
+            if ! python -m pytest tests_py; then
               git reset --hard "origin/$BRANCH"
               FAILED="$FAILED $SKILL_NAME"
               continue
             fi
 
-            if ! npm test 2>/dev/null; then
-              echo "::warning::Tests failed for $BRANCH"
-              git reset --hard "origin/$BRANCH"
-              FAILED="$FAILED $SKILL_NAME"
-              continue
-            fi
-
-            # Push the updated branch
             git push origin "$BRANCH"
             SUCCEEDED="$SUCCEEDED $SKILL_NAME"
-            echo "$BRANCH merged and pushed successfully."
           done
 
-          echo ""
-          echo "=== Results ==="
-          echo "Succeeded: $SUCCEEDED"
-          echo "Failed: $FAILED"
-
-          # Export for issue creation
           echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
           echo "succeeded=$SUCCEEDED" >> "$GITHUB_OUTPUT"
 
@@ -107,17 +83,7 @@ jobs:
             const body = [
               `The merge-forward workflow failed to merge \`main\` (${sha}) into the following skill branches:`,
               '',
-              ...failed.map(s => `- \`skill/${s}\`: merge conflict, build failure, or test failure`),
-              '',
-              'Please resolve manually:',
-              '```bash',
-              ...failed.map(s => [
-                `git checkout skill/${s}`,
-                `git merge main`,
-                `# resolve conflicts, then: git push`,
-                ''
-              ]).flat(),
-              '```',
+              ...failed.map(s => `- \`skill/${s}\`: merge conflict or test failure`),
               '',
               `Triggered by push to main: ${context.sha}`
             ].join('\n');
@@ -129,32 +95,3 @@ jobs:
               body,
               labels: ['skill-maintenance']
             });
-
-      - name: Notify channel forks
-        if: always()
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.FORK_DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}
-          script: |
-            const forks = [
-              'nanoclaw-whatsapp',
-              'nanoclaw-telegram',
-              'nanoclaw-discord',
-              'nanoclaw-slack',
-              'nanoclaw-gmail',
-              'nanoclaw-docker-sandboxes',
-            ];
-            const sha = context.sha.substring(0, 7);
-            for (const repo of forks) {
-              try {
-                await github.rest.repos.createDispatchEvent({
-                  owner: 'qwibitai',
-                  repo,
-                  event_type: 'upstream-main-updated',
-                  client_payload: { sha: context.sha },
-                });
-                console.log(`Notified ${repo}`);
-              } catch (e) {
-                console.log(`Failed to notify ${repo}: ${e.message}`);
-              }
-            }

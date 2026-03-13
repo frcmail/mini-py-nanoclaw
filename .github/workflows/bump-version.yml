@@ -3,7 +3,7 @@ name: Bump version
 on:
   push:
     branches: [main]
-    paths: ['src/**', 'container/**']
+    paths: ['mini_py_nanoclaw/**', 'tests_py/**', 'pyproject.toml']
 
 jobs:
   bump-version:
@@ -19,14 +19,42 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
 
-      - name: Bump patch version
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Bump patch version in pyproject
         run: |
-          npm version patch --no-git-tag-version
-          git add package.json package-lock.json
+          python - <<'PY'
+          import re
+          from pathlib import Path
+
+          pyproject = Path('pyproject.toml')
+          text = pyproject.read_text(encoding='utf-8')
+          m = re.search(r'^version\s*=\s*"(\d+)\.(\d+)\.(\d+)"\s*$', text, re.M)
+          if not m:
+              raise SystemExit('version not found')
+          major, minor, patch = map(int, m.groups())
+          new_version = f'{major}.{minor}.{patch + 1}'
+          updated = text[:m.start()] + f'version = "{new_version}"' + text[m.end():]
+          pyproject.write_text(updated, encoding='utf-8')
+          print(new_version)
+          PY
+
+      - name: Commit if changed
+        run: |
+          git add pyproject.toml
           git diff --cached --quiet && exit 0
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          VERSION=$(node -p "require('./package.json').version")
+          VERSION=$(python - <<'PY'
+          import re
+          from pathlib import Path
+          text = Path('pyproject.toml').read_text(encoding='utf-8')
+          m = re.search(r'^version\s*=\s*"([^"]+)"\s*$', text, re.M)
+          print(m.group(1))
+          PY
+          )
           git commit -m "chore: bump version to $VERSION"
           git pull --rebase
           git push
