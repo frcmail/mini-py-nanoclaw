@@ -41,6 +41,7 @@ class GroupQueue:
         self._max_concurrent = max(1, max_concurrent_containers)
         self._max_retries = max_retries
         self._base_retry_ms = base_retry_ms
+        self._close_stdin_fn: Callable[[str], None] | None = None
 
     def _get_group(self, group_jid: str) -> GroupState:
         state = self._groups.get(group_jid)
@@ -51,6 +52,9 @@ class GroupQueue:
 
     def set_process_messages_fn(self, fn: Callable[[str], Awaitable[bool]]) -> None:
         self._process_messages_fn = fn
+
+    def set_close_stdin_fn(self, fn: Callable[[str], None]) -> None:
+        self._close_stdin_fn = fn
 
     def enqueue_message_check(self, group_jid: str) -> None:
         if self._shutting_down:
@@ -104,9 +108,9 @@ class GroupQueue:
         if state.pending_tasks:
             self.close_stdin(group_jid)
 
-    def close_stdin(self, _group_jid: str) -> None:
-        # Python rewrite keeps API parity; runtime adapter handles IPC close semantics.
-        return
+    def close_stdin(self, group_jid: str) -> None:
+        if self._close_stdin_fn is not None:
+            self._close_stdin_fn(group_jid)
 
     async def _run_for_group(self, group_jid: str) -> None:
         state = self._get_group(group_jid)

@@ -2,17 +2,22 @@ from __future__ import annotations
 
 import asyncio
 
-from .app import NanoClawApp
+from .app import NanoClawApp, build_default_main_group
 
 
-async def _noop_worker() -> None:
-    return
+async def _run() -> None:
+    app = NanoClawApp()
+    app.load_state()
+    main_jid, main_group = build_default_main_group()
+    if main_jid not in app.registered_groups:
+        app.register_group(main_jid, main_group)
+    await app.setup_channels(["local-file"])
+    await app.run_loop()
 
 
 def main() -> None:
-    app = NanoClawApp()
     try:
-        asyncio.run(app.start(_noop_worker))
+        asyncio.run(_run())
     except KeyboardInterrupt:
         pass
 
