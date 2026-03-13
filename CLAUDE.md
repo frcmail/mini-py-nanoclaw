@@ -1,6 +1,6 @@
 # NanoClaw
 
-Personal Claude assistant. See [README.md](README.md) for philosophy and setup. See [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) for architecture decisions.
+Personal Claude assistant. See [README.md](README.md) and [README_py.md](README_py.md) for runtime and setup.
 
 ## Quick Context
 
@@ -32,8 +32,7 @@ Single Python process with a pluggable channel registry. Core channels include `
 | `/customize` | Adding channels, integrations, changing behavior |
 | `/debug` | Container issues, logs, troubleshooting |
 | `/update-nanoclaw` | Bring upstream NanoClaw updates into a customized install |
-| `/qodo-pr-resolver` | Fetch and fix Qodo PR review issues interactively or in batch |
-| `/get-qodo-rules` | Load org- and repo-level coding rules from Qodo before code tasks |
+| `/update-skills` | Refresh core skill instructions and alignment |
 
 ## Development
 
