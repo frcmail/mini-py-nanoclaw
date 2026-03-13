@@ -41,7 +41,7 @@ Run commands directly—don't tell the user to run them.
 ```bash
 python -m mini_py_nanoclaw                        # Start service
 python -m mini_py_nanoclaw.setup --step verify    # Run setup verification step
-python -m pytest tests_py                         # Run Python tests
+python -m pytest                                  # Run Python tests
 ./container/build.sh                              # Rebuild agent container
 ```
 

@@ -1,18 +1,22 @@
 # Python runtime
 /mini_py_nanoclaw/ @gavrielc @gabi-simons
-/tests_py/ @gavrielc @gabi-simons
 /pyproject.toml @gavrielc @gabi-simons
 
 # Runtime assets
 /container/ @gavrielc @gabi-simons
 /groups/ @gavrielc @gabi-simons
-/launchd/ @gavrielc @gabi-simons
+/deploy/launchd/ @gavrielc @gabi-simons
+/scripts/ @gavrielc @gabi-simons
+/setup.sh @gavrielc @gabi-simons
+/Makefile @gavrielc @gabi-simons
 /config-examples/ @gavrielc @gabi-simons
 
 # Repository operations
 /.github/ @gavrielc @gabi-simons
 /.claude/skills/ @gavrielc @gabi-simons
+/tests/ @gavrielc @gabi-simons
 /README.md @gavrielc @gabi-simons
 /README_zh.md @gavrielc @gabi-simons
+/SECURITY.md @gavrielc @gabi-simons
 /CLAUDE.md @gavrielc @gabi-simons
 /CHANGELOG.md @gavrielc @gabi-simons

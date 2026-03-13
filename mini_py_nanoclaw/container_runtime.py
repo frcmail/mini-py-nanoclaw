@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import subprocess
 
-from .config import CONTAINER_RUNTIME_BIN, PROXY_BIND_HOST
+from .config import CONTAINER_RUNTIME_BIN
 from .logger import logger
+
 
 def ensure_container_runtime_running() -> None:
     try:

@@ -14,13 +14,25 @@ nanoclaw-setup = "mini_py_nanoclaw.setup.__main__:main"
 
 [project.optional-dependencies]
 dev = [
+  "build==1.3.0",
   "pytest==7.4.4",
   "pytest-asyncio==0.23.8",
+  "ruff==0.15.6",
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["tests_py"]
+testpaths = ["tests"]
 asyncio_mode = "auto"
+
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E9", "F"]
+
+[tool.setuptools.packages.find]
+include = ["mini_py_nanoclaw*"]
 
 [build-system]
 requires = ["setuptools>=69"]

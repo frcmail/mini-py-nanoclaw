@@ -6,6 +6,10 @@
 
 ## Description
 
+## Validation
+
+- [ ] I ran `python -m pytest tests_py`
+- [ ] I ran `python -m ruff check mini_py_nanoclaw tests_py` (or CI covers this)
 
 ## For Core Skill Updates
 

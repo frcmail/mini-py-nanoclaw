@@ -34,4 +34,8 @@ agents-sdk-docs
 # Python
 __pycache__/
 .pytest_cache/
+.ruff_cache/
 .venv/
+build/
+dist/
+*.egg-info/

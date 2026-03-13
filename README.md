@@ -9,12 +9,31 @@ Pure Python NanoClaw implementation.
 - Container agent runner is Python-only (`mini_py_nanoclaw.agent_runner`).
 - Legacy Node/TypeScript runtime paths were removed from the main execution path.
 
+## Quality Gates
+
+- CI runs on push and pull request.
+- Lint: `ruff`
+- Tests: `pytest` matrix (`3.9`, `3.11`, `3.12`)
+- Packaging check: wheel/sdist build + `twine check`
+
 ## Quick Start
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install croniter==2.0.7 pytest==7.4.4 pytest-asyncio==0.23.8
+.venv/bin/pip install -e .[dev]
 .venv/bin/python -m mini_py_nanoclaw
+```
+
+By default runtime data lives in `~/.nanoclaw` (`NANOCLAW_HOME`). Override if needed:
+
+```bash
+export NANOCLAW_HOME=/path/to/nanoclaw-home
+```
+
+Copy environment template when needed:
+
+```bash
+cp .env.example .env
 ```
 
 ## Setup Steps
@@ -34,7 +53,7 @@ python3 -m mini_py_nanoclaw.setup --step verify
 Or via helper script:
 
 ```bash
-./setup.sh environment
+./scripts/setup.sh environment
 ```
 
 ## Channels
@@ -62,7 +81,22 @@ Inbound webhook payload (`POST /inbound`):
 ## Running Tests
 
 ```bash
-.venv/bin/python -m pytest tests_py
+.venv/bin/python -m pytest
+```
+
+## Lint
+
+```bash
+.venv/bin/python -m ruff check mini_py_nanoclaw tests
+```
+
+## Unified Commands
+
+```bash
+make lint
+make test
+make build
+make check
 ```
 
 ## Container Build

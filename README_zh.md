@@ -11,12 +11,31 @@
 - 容器内 agent runner 为纯 Python（`mini_py_nanoclaw.agent_runner`）。
 - 主执行路径中的 Node/TypeScript 运行代码已移除。
 
+## 质量门禁
+
+- CI 在 `push` 与 `pull_request` 上执行。
+- Lint：`ruff`
+- 测试：`pytest` 多版本矩阵（`3.9`、`3.11`、`3.12`）
+- 打包校验：构建 wheel/sdist 并执行 `twine check`
+
 ## 快速开始
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install croniter==2.0.7 pytest==7.4.4 pytest-asyncio==0.23.8
+.venv/bin/pip install -e .[dev]
 .venv/bin/python -m mini_py_nanoclaw
+```
+
+默认运行数据目录为 `~/.nanoclaw`（`NANOCLAW_HOME`），可按需覆盖：
+
+```bash
+export NANOCLAW_HOME=/path/to/nanoclaw-home
+```
+
+需要环境变量时先复制模板：
+
+```bash
+cp .env.example .env
 ```
 
 ## Setup 步骤
@@ -35,6 +54,12 @@ python3 -m mini_py_nanoclaw.setup --step verify
 
 ```bash
 ./setup.sh environment
+```
+
+或使用新的脚本路径：
+
+```bash
+./scripts/setup.sh environment
 ```
 
 ## Channel 配置
@@ -62,5 +87,20 @@ Webhook 入站接口（`POST /inbound`）字段：
 ## 测试
 
 ```bash
-.venv/bin/python -m pytest tests_py
+.venv/bin/python -m pytest
+```
+
+## Lint
+
+```bash
+.venv/bin/python -m ruff check mini_py_nanoclaw tests
+```
+
+## 统一命令
+
+```bash
+make lint
+make test
+make build
+make check
 ```

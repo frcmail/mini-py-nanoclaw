@@ -53,9 +53,9 @@ git diff --name-only $BASE..upstream/main
 
 Group likely conflict areas:
 - Python runtime: `mini_py_nanoclaw/`
-- Tests: `tests_py/`
+- Tests: `tests/`
 - Core skills: `.claude/skills/`
-- Infra/docs: `.github/`, `README*`, `container/`, `launchd/`
+- Infra/docs: `.github/`, `README*`, `container/`, `deploy/launchd/`
 
 ## 4) Apply chosen strategy
 
@@ -82,7 +82,7 @@ If conflicts occur, resolve only conflict markers and keep intentional local cus
 ## 5) Validate
 
 ```bash
-python -m pytest tests_py
+python -m pytest tests
 ```
 
 If tests fail, fix only update-related regressions.

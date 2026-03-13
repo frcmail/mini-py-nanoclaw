@@ -83,7 +83,7 @@ python -m mini_py_nanoclaw
 Run tests:
 
 ```bash
-python -m pytest tests_py
+python -m pytest tests
 ```
 
 ## 5) Quick recovery checklist

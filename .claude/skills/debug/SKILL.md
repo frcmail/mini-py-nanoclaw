@@ -14,7 +14,7 @@ Run:
 ```bash
 python -m mini_py_nanoclaw.setup --step environment
 python -m mini_py_nanoclaw.setup --step verify
-python -m pytest tests_py
+python -m pytest tests
 ```
 
 If tests fail, fix test-reported regressions first.

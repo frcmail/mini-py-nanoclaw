@@ -37,7 +37,15 @@ POLL_INTERVAL = 2000
 SCHEDULER_POLL_INTERVAL = 60000
 IPC_POLL_INTERVAL = 1000
 
-PROJECT_ROOT = Path.cwd()
+def _resolve_nanoclaw_home() -> Path:
+    configured = os.getenv("NANOCLAW_HOME")
+    if configured:
+        return Path(configured).expanduser().resolve()
+    return (Path.home() / ".nanoclaw").resolve()
+
+
+NANOCLAW_HOME = _resolve_nanoclaw_home()
+PROJECT_ROOT = NANOCLAW_HOME
 HOME_DIR = Path.home()
 
 MOUNT_ALLOWLIST_PATH = HOME_DIR / ".config" / "nanoclaw" / "mount-allowlist.json"

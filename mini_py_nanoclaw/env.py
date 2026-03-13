@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 
 def read_env_file(keys: list[str], env_path: Path | None = None) -> dict[str, str]:
     """Read a subset of keys from a dotenv-style file."""
-    path = env_path or Path.cwd() / ".env"
+    if env_path is not None:
+        path = env_path
+    else:
+        home = os.getenv("NANOCLAW_HOME")
+        base = Path(home).expanduser() if home else (Path.home() / ".nanoclaw")
+        path = base / ".env"
     if not path.exists():
         return {}
 

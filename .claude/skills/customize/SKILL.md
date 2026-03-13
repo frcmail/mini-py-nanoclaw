@@ -12,8 +12,8 @@ Use this skill for behavior changes in the Python codebase.
 1. Clarify target behavior and acceptance criteria.
 2. Identify the smallest Python subsystem to change.
 3. Implement directly in `mini_py_nanoclaw/`.
-4. Add or update tests in `tests_py/`.
-5. Verify with `python -m pytest tests_py`.
+4. Add or update tests in `tests/`.
+5. Verify with `python -m pytest tests`.
 
 ## Primary extension points
 
@@ -53,7 +53,7 @@ Use this skill for behavior changes in the Python codebase.
 Always run:
 
 ```bash
-python -m pytest tests_py
+python -m pytest tests
 ```
 
 For runtime-impacting changes, also run:
