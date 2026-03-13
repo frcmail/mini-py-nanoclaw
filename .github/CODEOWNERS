@@ -1,10 +1,18 @@
-# Core code - maintainer only
-/src/ @gavrielc @gabi-simons
+# Python runtime
+/mini_py_nanoclaw/ @gavrielc @gabi-simons
+/tests_py/ @gavrielc @gabi-simons
+/pyproject.toml @gavrielc @gabi-simons
+
+# Runtime assets
 /container/ @gavrielc @gabi-simons
 /groups/ @gavrielc @gabi-simons
 /launchd/ @gavrielc @gabi-simons
-/package.json @gavrielc @gabi-simons
-/package-lock.json @gavrielc @gabi-simons
+/config-examples/ @gavrielc @gabi-simons
 
-# Skills - open to contributors
-/.claude/skills/
+# Repository operations
+/.github/ @gavrielc @gabi-simons
+/.claude/skills/ @gavrielc @gabi-simons
+/README.md @gavrielc @gabi-simons
+/README_zh.md @gavrielc @gabi-simons
+/CLAUDE.md @gavrielc @gabi-simons
+/CHANGELOG.md @gavrielc @gabi-simons

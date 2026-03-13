@@ -2,6 +2,8 @@
 
 纯 Python 版本的 NanoClaw 实现。
 
+英文主文档请看 [README.md](README.md)。
+
 ## 当前状态
 
 - 运行时为纯 Python（`mini_py_nanoclaw`）。
