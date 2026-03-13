@@ -3,9 +3,9 @@ from datetime import datetime, timezone
 
 import pytest
 
-from mini_py_nanoclaw.db import NanoClawDB
-from mini_py_nanoclaw.ipc import IpcDeps, IpcWatcher
-from mini_py_nanoclaw.types import RegisteredGroup
+from nanoclaw.db import NanoClawDB
+from nanoclaw.ipc import IpcDeps, IpcWatcher
+from nanoclaw.types import RegisteredGroup
 
 
 def _now_iso() -> str:

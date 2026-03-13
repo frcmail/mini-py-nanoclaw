@@ -1,4 +1,4 @@
-from mini_py_nanoclaw.group_folder import (
+from nanoclaw.group_folder import (
     assert_valid_group_folder,
     is_valid_group_folder,
     resolve_group_folder_path,

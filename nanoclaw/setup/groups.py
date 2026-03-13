@@ -20,7 +20,7 @@ def _ensure(path, content: str) -> bool:
 
 def _load_template(folder: str, fallback: str) -> str:
     try:
-        template = files("mini_py_nanoclaw")
+        template = files("nanoclaw")
         for segment in (*TEMPLATE_BASE, folder, "CLAUDE.md"):
             template = template.joinpath(segment)
         if template.is_file():

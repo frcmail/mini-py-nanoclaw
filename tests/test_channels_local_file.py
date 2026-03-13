@@ -3,8 +3,8 @@ from datetime import datetime, timezone
 
 import pytest
 
-from mini_py_nanoclaw.channels.local_file import LocalFileChannel
-from mini_py_nanoclaw.channels.registry import ChannelOpts
+from nanoclaw.channels.local_file import LocalFileChannel
+from nanoclaw.channels.registry import ChannelOpts
 
 
 def _now_iso() -> str:

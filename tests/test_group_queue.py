@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from mini_py_nanoclaw.group_queue import GroupQueue
+from nanoclaw.group_queue import GroupQueue
 
 
 @pytest.mark.asyncio

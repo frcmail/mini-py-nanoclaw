@@ -3,7 +3,7 @@ import threading
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from mini_py_nanoclaw import credential_proxy
+from nanoclaw import credential_proxy
 
 
 class _UpstreamHandler(BaseHTTPRequestHandler):

@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from mini_py_nanoclaw.channels.cli_stdio import CliStdioChannel
-from mini_py_nanoclaw.channels.registry import ChannelOpts
+from nanoclaw.channels.cli_stdio import CliStdioChannel
+from nanoclaw.channels.registry import ChannelOpts
 
 
 @pytest.mark.asyncio

@@ -2,8 +2,8 @@ import sys
 
 import pytest
 
-from mini_py_nanoclaw.container_runner import ContainerInput, run_container_agent
-from mini_py_nanoclaw.types import ContainerConfig, RegisteredGroup
+from nanoclaw.container_runner import ContainerInput, run_container_agent
+from nanoclaw.types import ContainerConfig, RegisteredGroup
 
 
 @pytest.mark.asyncio
@@ -24,7 +24,7 @@ async def test_container_runner_success() -> None:
             chat_jid="local:main",
             is_main=True,
         ),
-        command=f"{sys.executable} -m mini_py_nanoclaw.simple_agent",
+        command=f"{sys.executable} -m nanoclaw.simple_agent",
     )
 
     assert output.status == "success"

@@ -28,13 +28,13 @@ ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 
 WORKDIR /app
 COPY pyproject.toml /app/pyproject.toml
-COPY mini_py_nanoclaw /app/mini_py_nanoclaw
+COPY nanoclaw /app/nanoclaw
 
 RUN pip install --no-cache-dir croniter==2.0.7
 
 RUN mkdir -p /workspace/group /workspace/global /workspace/extra /workspace/ipc/messages /workspace/ipc/tasks /workspace/ipc/input
 
-RUN printf '#!/bin/bash\nset -e\ncat > /tmp/input.json\npython -m mini_py_nanoclaw.agent_runner < /tmp/input.json\n' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+RUN printf '#!/bin/bash\nset -e\ncat > /tmp/input.json\npython -m nanoclaw.agent_runner < /tmp/input.json\n' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 WORKDIR /workspace/group
 ENTRYPOINT ["/app/entrypoint.sh"]

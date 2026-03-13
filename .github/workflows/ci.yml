@@ -23,7 +23,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install .[dev]
       - name: Lint
-        run: python -m ruff check mini_py_nanoclaw tests
+        run: python -m ruff check nanoclaw tests
 
   test:
     runs-on: ubuntu-latest

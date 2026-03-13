@@ -4,10 +4,10 @@ from datetime import datetime, timezone
 
 import pytest
 
-from mini_py_nanoclaw.app import NanoClawApp, build_default_main_group
-from mini_py_nanoclaw.channels.local_file import LocalFileChannel
-from mini_py_nanoclaw.channels.registry import ChannelOpts
-from mini_py_nanoclaw.db import NanoClawDB
+from nanoclaw.app import NanoClawApp, build_default_main_group
+from nanoclaw.channels.local_file import LocalFileChannel
+from nanoclaw.channels.registry import ChannelOpts
+from nanoclaw.db import NanoClawDB
 
 
 def _now_iso() -> str:

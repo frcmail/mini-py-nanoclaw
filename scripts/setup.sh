@@ -7,4 +7,4 @@ cd "$PROJECT_ROOT"
 STEP="${1:-environment}"
 shift || true
 
-python3 -m mini_py_nanoclaw.setup --step "$STEP" "$@"
+python3 -m nanoclaw.setup --step "$STEP" "$@"

@@ -4,9 +4,9 @@ Pure Python NanoClaw implementation.
 
 ## Status
 
-- Runtime is Python-only (`mini_py_nanoclaw`).
-- Setup is Python-only (`python -m mini_py_nanoclaw.setup --step ...`).
-- Container agent runner is Python-only (`mini_py_nanoclaw.agent_runner`).
+- Runtime is Python-only (`nanoclaw`).
+- Setup is Python-only (`python -m nanoclaw.setup --step ...`).
+- Container agent runner is Python-only (`nanoclaw.agent_runner`).
 - Legacy Node/TypeScript runtime paths were removed from the main execution path.
 
 ## Quality Gates
@@ -21,7 +21,7 @@ Pure Python NanoClaw implementation.
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -e .[dev]
-.venv/bin/python -m mini_py_nanoclaw
+.venv/bin/python -m nanoclaw
 ```
 
 By default runtime data lives in `~/.nanoclaw` (`NANOCLAW_HOME`). Override if needed:
@@ -43,13 +43,13 @@ cp .env.example .env
 Run setup steps individually:
 
 ```bash
-python3 -m mini_py_nanoclaw.setup --step environment
-python3 -m mini_py_nanoclaw.setup --step container
-python3 -m mini_py_nanoclaw.setup --step groups
-python3 -m mini_py_nanoclaw.setup --step register
-python3 -m mini_py_nanoclaw.setup --step mounts
-python3 -m mini_py_nanoclaw.setup --step service
-python3 -m mini_py_nanoclaw.setup --step verify
+python3 -m nanoclaw.setup --step environment
+python3 -m nanoclaw.setup --step container
+python3 -m nanoclaw.setup --step groups
+python3 -m nanoclaw.setup --step register
+python3 -m nanoclaw.setup --step mounts
+python3 -m nanoclaw.setup --step service
+python3 -m nanoclaw.setup --step verify
 ```
 
 Or via helper script:
@@ -89,7 +89,7 @@ Inbound webhook payload (`POST /inbound`):
 ## Lint
 
 ```bash
-.venv/bin/python -m ruff check mini_py_nanoclaw tests
+.venv/bin/python -m ruff check nanoclaw tests
 ```
 
 ## Unified Commands

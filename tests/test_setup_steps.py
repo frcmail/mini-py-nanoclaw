@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from mini_py_nanoclaw.setup import container, groups, mounts, register, verify
+from nanoclaw.setup import container, groups, mounts, register, verify
 
 
 def test_setup_groups_and_register(tmp_path, monkeypatch) -> None:

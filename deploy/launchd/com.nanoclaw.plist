@@ -8,7 +8,7 @@
     <array>
         <string>{{PYTHON_PATH}}</string>
         <string>-m</string>
-        <string>mini_py_nanoclaw</string>
+        <string>nanoclaw</string>
     </array>
     <key>WorkingDirectory</key>
     <string>{{PROJECT_ROOT}}</string>

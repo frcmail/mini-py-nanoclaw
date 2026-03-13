@@ -18,7 +18,7 @@ OUTPUT_START_MARKER = "---NANOCLAW_OUTPUT_START---"
 OUTPUT_END_MARKER = "---NANOCLAW_OUTPUT_END---"
 DEFAULT_AGENT_COMMAND = os.getenv(
     "NANOCLAW_AGENT_COMMAND",
-    f"{sys.executable} -m mini_py_nanoclaw.agent_runner",
+    f"{sys.executable} -m nanoclaw.agent_runner",
 )
 
 

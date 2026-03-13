@@ -6,9 +6,9 @@
 
 ## 当前状态
 
-- 运行时为纯 Python（`mini_py_nanoclaw`）。
-- setup 链路为纯 Python（`python -m mini_py_nanoclaw.setup --step ...`）。
-- 容器内 agent runner 为纯 Python（`mini_py_nanoclaw.agent_runner`）。
+- 运行时为纯 Python（`nanoclaw`）。
+- setup 链路为纯 Python（`python -m nanoclaw.setup --step ...`）。
+- 容器内 agent runner 为纯 Python（`nanoclaw.agent_runner`）。
 - 主执行路径中的 Node/TypeScript 运行代码已移除。
 
 ## 质量门禁
@@ -23,7 +23,7 @@
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -e .[dev]
-.venv/bin/python -m mini_py_nanoclaw
+.venv/bin/python -m nanoclaw
 ```
 
 默认运行数据目录为 `~/.nanoclaw`（`NANOCLAW_HOME`），可按需覆盖：
@@ -43,13 +43,13 @@ cp .env.example .env
 ## Setup 步骤
 
 ```bash
-python3 -m mini_py_nanoclaw.setup --step environment
-python3 -m mini_py_nanoclaw.setup --step container
-python3 -m mini_py_nanoclaw.setup --step groups
-python3 -m mini_py_nanoclaw.setup --step register
-python3 -m mini_py_nanoclaw.setup --step mounts
-python3 -m mini_py_nanoclaw.setup --step service
-python3 -m mini_py_nanoclaw.setup --step verify
+python3 -m nanoclaw.setup --step environment
+python3 -m nanoclaw.setup --step container
+python3 -m nanoclaw.setup --step groups
+python3 -m nanoclaw.setup --step register
+python3 -m nanoclaw.setup --step mounts
+python3 -m nanoclaw.setup --step service
+python3 -m nanoclaw.setup --step verify
 ```
 
 也可使用脚本：
@@ -95,7 +95,7 @@ Webhook 入站接口（`POST /inbound`）字段：
 ## Lint
 
 ```bash
-.venv/bin/python -m ruff check mini_py_nanoclaw tests
+.venv/bin/python -m ruff check nanoclaw tests
 ```
 
 ## 统一命令

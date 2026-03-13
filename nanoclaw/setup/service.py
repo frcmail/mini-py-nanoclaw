@@ -9,6 +9,6 @@ def run(_args: list[str]) -> None:
         {
             "MODE": "manual",
             "STATUS": "success",
-            "NEXT": "Run `python -m mini_py_nanoclaw` to start service",
+            "NEXT": "Run `python -m nanoclaw` to start service",
         },
     )

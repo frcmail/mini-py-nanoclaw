@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
-from mini_py_nanoclaw.task_scheduler import compute_next_run
-from mini_py_nanoclaw.types import ScheduledTask
+from nanoclaw.task_scheduler import compute_next_run
+from nanoclaw.types import ScheduledTask
 
 
 def make_interval_task(next_run: str, value_ms: int = 60000) -> ScheduledTask:

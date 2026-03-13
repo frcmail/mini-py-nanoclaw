@@ -1,5 +1,5 @@
-from mini_py_nanoclaw.router import escape_xml, format_messages, format_outbound, strip_internal_tags
-from mini_py_nanoclaw.types import NewMessage
+from nanoclaw.router import escape_xml, format_messages, format_outbound, strip_internal_tags
+from nanoclaw.types import NewMessage
 
 
 def make_msg(**kwargs: object) -> NewMessage:

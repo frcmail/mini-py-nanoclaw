@@ -1,7 +1,7 @@
 import json
 
-from mini_py_nanoclaw import mount_security
-from mini_py_nanoclaw.types import AdditionalMount
+from nanoclaw import mount_security
+from nanoclaw.types import AdditionalMount
 
 
 def test_validate_additional_mounts(tmp_path, monkeypatch) -> None:

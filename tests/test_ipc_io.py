@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from mini_py_nanoclaw import group_folder
-from mini_py_nanoclaw.ipc_io import close_container_input, drain_container_inputs, send_container_input, should_close
+from nanoclaw import group_folder
+from nanoclaw.ipc_io import close_container_input, drain_container_inputs, send_container_input, should_close
 
 
 def test_ipc_input_and_close_signal(tmp_path) -> None:

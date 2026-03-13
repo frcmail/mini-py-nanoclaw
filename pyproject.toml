@@ -9,8 +9,8 @@ dependencies = [
 ]
 
 [project.scripts]
-nanoclaw = "mini_py_nanoclaw.__main__:main"
-nanoclaw-setup = "mini_py_nanoclaw.setup.__main__:main"
+nanoclaw = "nanoclaw.__main__:main"
+nanoclaw-setup = "nanoclaw.setup.__main__:main"
 
 [project.optional-dependencies]
 dev = [
@@ -32,10 +32,10 @@ line-length = 100
 select = ["E9", "F"]
 
 [tool.setuptools.packages.find]
-include = ["mini_py_nanoclaw*"]
+include = ["nanoclaw*"]
 
 [tool.setuptools.package-data]
-mini_py_nanoclaw = [
+nanoclaw = [
   "templates/groups/main/CLAUDE.md",
   "templates/groups/global/CLAUDE.md",
 ]

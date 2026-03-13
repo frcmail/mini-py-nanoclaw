@@ -5,12 +5,12 @@ from datetime import datetime, timezone
 
 import pytest
 
-from mini_py_nanoclaw.app import NanoClawApp, _resolve_channel_names, build_default_main_group
-from mini_py_nanoclaw.channels.cli_stdio import CliStdioChannel
-from mini_py_nanoclaw.channels.local_file import LocalFileChannel
-from mini_py_nanoclaw.channels.registry import ChannelOpts
-from mini_py_nanoclaw.db import NanoClawDB
-from mini_py_nanoclaw.types import RegisteredGroup
+from nanoclaw.app import NanoClawApp, _resolve_channel_names, build_default_main_group
+from nanoclaw.channels.cli_stdio import CliStdioChannel
+from nanoclaw.channels.local_file import LocalFileChannel
+from nanoclaw.channels.registry import ChannelOpts
+from nanoclaw.db import NanoClawDB
+from nanoclaw.types import RegisteredGroup
 
 
 def _now_iso() -> str:

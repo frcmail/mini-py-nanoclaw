@@ -1,7 +1,7 @@
 from typing import Optional
 
-from mini_py_nanoclaw.db import NanoClawDB
-from mini_py_nanoclaw.types import NewMessage, ScheduledTask
+from nanoclaw.db import NanoClawDB
+from nanoclaw.types import NewMessage, ScheduledTask
 
 
 def make_task(task_id: str, next_run: Optional[str]) -> ScheduledTask:

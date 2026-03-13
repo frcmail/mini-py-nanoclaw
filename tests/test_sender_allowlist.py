@@ -1,6 +1,6 @@
 import json
 
-from mini_py_nanoclaw.sender_allowlist import (
+from nanoclaw.sender_allowlist import (
     is_sender_allowed,
     is_trigger_allowed,
     load_sender_allowlist,

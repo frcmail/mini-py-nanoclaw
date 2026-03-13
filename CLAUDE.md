@@ -10,17 +10,17 @@ Single Python process with a pluggable channel registry. Core channels include `
 
 | File | Purpose |
 |------|---------|
-| `mini_py_nanoclaw/app.py` | Orchestrator: state, polling loop, agent invocation |
-| `mini_py_nanoclaw/channels/registry.py` | Channel registry |
-| `mini_py_nanoclaw/ipc.py` | IPC watcher and task processing |
-| `mini_py_nanoclaw/router.py` | Message formatting and outbound routing |
-| `mini_py_nanoclaw/config.py` | Trigger pattern, paths, intervals |
-| `mini_py_nanoclaw/container_runner.py` | Agent runner interface + output marker parsing |
-| `mini_py_nanoclaw/task_scheduler.py` | Scheduled task engine |
-| `mini_py_nanoclaw/db.py` | SQLite operations |
-| `mini_py_nanoclaw/setup/` | Python setup steps and status output |
-| `mini_py_nanoclaw/agent_runner.py` | Container-side Python agent runtime |
-| `mini_py_nanoclaw/mcp_stdio.py` | Container-side Python MCP stdio service |
+| `nanoclaw/app.py` | Orchestrator: state, polling loop, agent invocation |
+| `nanoclaw/channels/registry.py` | Channel registry |
+| `nanoclaw/ipc.py` | IPC watcher and task processing |
+| `nanoclaw/router.py` | Message formatting and outbound routing |
+| `nanoclaw/config.py` | Trigger pattern, paths, intervals |
+| `nanoclaw/container_runner.py` | Agent runner interface + output marker parsing |
+| `nanoclaw/task_scheduler.py` | Scheduled task engine |
+| `nanoclaw/db.py` | SQLite operations |
+| `nanoclaw/setup/` | Python setup steps and status output |
+| `nanoclaw/agent_runner.py` | Container-side Python agent runtime |
+| `nanoclaw/mcp_stdio.py` | Container-side Python MCP stdio service |
 | `$NANOCLAW_HOME/groups/<name>/CLAUDE.md` | Per-group memory (isolated) |
 | `container/skills/agent-browser/SKILL.md` | Browser automation tool (available to agents via Bash) |
 
@@ -39,8 +39,8 @@ Single Python process with a pluggable channel registry. Core channels include `
 Run commands directly—don't tell the user to run them.
 
 ```bash
-python -m mini_py_nanoclaw                        # Start service
-python -m mini_py_nanoclaw.setup --step verify    # Run setup verification step
+python -m nanoclaw                        # Start service
+python -m nanoclaw.setup --step verify    # Run setup verification step
 python -m pytest                                  # Run Python tests
 ./container/build.sh                              # Rebuild agent container
 ```

@@ -9,8 +9,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
-from mini_py_nanoclaw.channels.registry import ChannelOpts
-from mini_py_nanoclaw.channels.webhook_http import WebhookHttpChannel
+from nanoclaw.channels.registry import ChannelOpts
+from nanoclaw.channels.webhook_http import WebhookHttpChannel
 
 
 def _post(url: str, payload: dict, token: str | None = None) -> tuple[int, str]:
