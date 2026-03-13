@@ -32,6 +32,8 @@ python3 -m venv .venv
 export NANOCLAW_HOME=/path/to/nanoclaw-home
 ```
 
+分组记忆文件位于 `$NANOCLAW_HOME/groups/<folder>/CLAUDE.md`（运行时目录，不纳入仓库版本管理）。
+
 需要环境变量时先复制模板：
 
 ```bash

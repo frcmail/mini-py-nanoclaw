@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from mini_py_nanoclaw.setup import container, groups, mounts, register, verify
 
 
@@ -42,3 +44,25 @@ def test_setup_mounts_and_verify(tmp_path, monkeypatch) -> None:
 def test_setup_container_step_without_docker(monkeypatch) -> None:
     monkeypatch.setattr(container.shutil, "which", lambda _name: None)
     container.run([])
+
+
+def test_setup_groups_writes_packaged_templates(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(groups, "GROUPS_DIR", tmp_path / "groups")
+    groups.run([])
+
+    template_root = Path(groups.__file__).resolve().parent.parent / "templates" / "groups"
+    expected_main = (template_root / "main" / "CLAUDE.md").read_text(encoding="utf-8")
+    expected_global = (template_root / "global" / "CLAUDE.md").read_text(encoding="utf-8")
+
+    assert (tmp_path / "groups" / "main" / "CLAUDE.md").read_text(encoding="utf-8") == expected_main
+    assert (tmp_path / "groups" / "global" / "CLAUDE.md").read_text(encoding="utf-8") == expected_global
+
+
+def test_setup_groups_template_fallback(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(groups, "GROUPS_DIR", tmp_path / "groups")
+    monkeypatch.setattr(groups, "_load_template", lambda _folder, fallback: fallback)
+
+    groups.run([])
+
+    assert (tmp_path / "groups" / "main" / "CLAUDE.md").read_text(encoding="utf-8") == groups.DEFAULT_MAIN
+    assert (tmp_path / "groups" / "global" / "CLAUDE.md").read_text(encoding="utf-8") == groups.DEFAULT_GLOBAL

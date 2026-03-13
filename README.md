@@ -30,6 +30,8 @@ By default runtime data lives in `~/.nanoclaw` (`NANOCLAW_HOME`). Override if ne
 export NANOCLAW_HOME=/path/to/nanoclaw-home
 ```
 
+Group memory is managed at `$NANOCLAW_HOME/groups/<folder>/CLAUDE.md` (runtime-only, not tracked in this repo).
+
 Copy environment template when needed:
 
 ```bash

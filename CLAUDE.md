@@ -21,7 +21,7 @@ Single Python process with a pluggable channel registry. Core channels include `
 | `mini_py_nanoclaw/setup/` | Python setup steps and status output |
 | `mini_py_nanoclaw/agent_runner.py` | Container-side Python agent runtime |
 | `mini_py_nanoclaw/mcp_stdio.py` | Container-side Python MCP stdio service |
-| `groups/{name}/CLAUDE.md` | Per-group memory (isolated) |
+| `$NANOCLAW_HOME/groups/<name>/CLAUDE.md` | Per-group memory (isolated) |
 | `container/skills/agent-browser/SKILL.md` | Browser automation tool (available to agents via Bash) |
 
 ## Skills

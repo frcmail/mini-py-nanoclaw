@@ -34,6 +34,12 @@ select = ["E9", "F"]
 [tool.setuptools.packages.find]
 include = ["mini_py_nanoclaw*"]
 
+[tool.setuptools.package-data]
+mini_py_nanoclaw = [
+  "templates/groups/main/CLAUDE.md",
+  "templates/groups/global/CLAUDE.md",
+]
+
 [build-system]
 requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"

@@ -4,7 +4,6 @@
 
 # Runtime assets
 /container/ @gavrielc @gabi-simons
-/groups/ @gavrielc @gabi-simons
 /deploy/launchd/ @gavrielc @gabi-simons
 /scripts/ @gavrielc @gabi-simons
 /setup.sh @gavrielc @gabi-simons
