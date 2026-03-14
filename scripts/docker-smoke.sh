@@ -6,13 +6,35 @@ cd "$PROJECT_ROOT"
 
 CONTAINER_RUNTIME="${CONTAINER_RUNTIME:-docker}"
 SERVICE_IMAGE="${SERVICE_IMAGE:-nanoclaw-service:smoke}"
+AGENT_IMAGE="${AGENT_IMAGE:-nanoclaw-agent:smoke}"
+
+if ! command -v "${CONTAINER_RUNTIME}" >/dev/null 2>&1; then
+  echo "[docker-smoke] missing container runtime: ${CONTAINER_RUNTIME}" >&2
+  exit 127
+fi
+
+if [[ "${CONTAINER_RUNTIME}" == "docker" ]]; then
+  "${CONTAINER_RUNTIME}" info >/dev/null
+fi
+
+if [[ ! -S /var/run/docker.sock ]]; then
+  echo "[docker-smoke] missing /var/run/docker.sock" >&2
+  exit 1
+fi
+
+echo "[docker-smoke] validating compose config"
+${CONTAINER_RUNTIME} compose config -q
 
 echo "[docker-smoke] building service image: ${SERVICE_IMAGE}"
 ${CONTAINER_RUNTIME} build -t "${SERVICE_IMAGE}" -f Dockerfile .
 
+echo "[docker-smoke] building agent image: ${AGENT_IMAGE}"
+${CONTAINER_RUNTIME} build -t "${AGENT_IMAGE}" -f container/Dockerfile container
+
 echo "[docker-smoke] running setup smoke in container"
 ${CONTAINER_RUNTIME} run --rm \
   -e NANOCLAW_HOME=/tmp/nanoclaw-smoke \
+  -e CONTAINER_IMAGE="${AGENT_IMAGE}" \
   -v /var/run/docker.sock:/var/run/docker.sock \
   "${SERVICE_IMAGE}" \
   sh -lc 'python -m nanoclaw.setup --step environment && \

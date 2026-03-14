@@ -122,6 +122,7 @@ Direct commands:
 Main service container (this repo root):
 
 ```bash
+./container/build.sh local
 docker compose build
 docker compose up -d
 docker compose logs -f nanoclaw

@@ -24,6 +24,7 @@ check: lint test build
 
 docker-build:
 	docker compose build
+	./container/build.sh local
 
 docker-up:
 	docker compose up -d

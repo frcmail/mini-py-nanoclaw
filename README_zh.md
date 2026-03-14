@@ -122,6 +122,7 @@ make check       # lint + test + build
 主服务容器（仓库根目录）：
 
 ```bash
+./container/build.sh local
 docker compose build
 docker compose up -d
 docker compose logs -f nanoclaw
