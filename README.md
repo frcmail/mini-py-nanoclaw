@@ -117,7 +117,41 @@ Direct commands:
 .venv/bin/python -m build
 ```
 
-## Container Build
+## Dockerized Run
+
+Main service container (this repo root):
+
+```bash
+docker compose build
+docker compose up -d
+docker compose logs -f nanoclaw
+```
+
+Prerequisite: Docker Engine + Docker Compose plugin.
+
+Stop and cleanup:
+
+```bash
+docker compose down
+```
+
+Run Docker smoke test:
+
+```bash
+./scripts/docker-smoke.sh
+```
+
+Docker socket note:
+
+- Compose mounts `/var/run/docker.sock` into the service container so NanoClaw can continue to launch agent containers.
+- This grants elevated host control to the container. Use only on trusted local/controlled environments.
+
+### Container Roles
+
+- Root `Dockerfile`: main NanoClaw service image (`python -m nanoclaw`)
+- `container/Dockerfile`: agent runner image (`nanoclaw-agent`) used by task/container execution path
+
+Build the agent image:
 
 ```bash
 cd container
@@ -129,3 +163,4 @@ cd container
 - Lint: `ruff`
 - Tests: `pytest` matrix (`3.9`, `3.11`, `3.12`)
 - Packaging: `build` + `twine check`
+- Docker smoke: `./scripts/docker-smoke.sh`

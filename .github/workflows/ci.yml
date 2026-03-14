@@ -56,3 +56,10 @@ jobs:
           pip install build twine
           python -m build
           python -m twine check dist/*
+
+  docker-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Docker smoke test
+        run: ./scripts/docker-smoke.sh

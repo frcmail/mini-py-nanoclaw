@@ -1,0 +1,29 @@
+services:
+  nanoclaw:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nanoclaw-service:local
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NANOCLAW_HOME: /data/nanoclaw
+      ASSISTANT_NAME: ${ASSISTANT_NAME:-Andy}
+      NANOCLAW_CHANNELS: ${NANOCLAW_CHANNELS:-local-file}
+      NANOCLAW_WEBHOOK_HOST: ${NANOCLAW_WEBHOOK_HOST:-0.0.0.0}
+      NANOCLAW_WEBHOOK_PORT: ${NANOCLAW_WEBHOOK_PORT:-8787}
+      NANOCLAW_WEBHOOK_TOKEN: ${NANOCLAW_WEBHOOK_TOKEN:-}
+      NANOCLAW_WEBHOOK_OUTBOUND_URL: ${NANOCLAW_WEBHOOK_OUTBOUND_URL:-}
+      CONTAINER_RUNTIME_BIN: ${CONTAINER_RUNTIME_BIN:-docker}
+      CONTAINER_IMAGE: ${CONTAINER_IMAGE:-nanoclaw-agent:latest}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${NANOCLAW_WEBHOOK_PORT:-8787}:${NANOCLAW_WEBHOOK_PORT:-8787}"
+    volumes:
+      - nanoclaw_data:/data/nanoclaw
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  nanoclaw_data:

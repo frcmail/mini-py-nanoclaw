@@ -117,7 +117,41 @@ make check       # lint + test + build
 .venv/bin/python -m build
 ```
 
-## 容器镜像构建
+## Docker 化运行
+
+主服务容器（仓库根目录）：
+
+```bash
+docker compose build
+docker compose up -d
+docker compose logs -f nanoclaw
+```
+
+前置条件：已安装 Docker Engine 与 Docker Compose 插件。
+
+停止并清理：
+
+```bash
+docker compose down
+```
+
+执行 Docker smoke 测试：
+
+```bash
+./scripts/docker-smoke.sh
+```
+
+docker.sock 安全说明：
+
+- Compose 默认把宿主机 `/var/run/docker.sock` 挂载到服务容器，确保 NanoClaw 仍可拉起 agent 容器。
+- 该能力等价于较高宿主机权限，只建议在可信本机/受控环境中使用。
+
+### 容器职责划分
+
+- 根目录 `Dockerfile`：主服务镜像（`python -m nanoclaw`）
+- `container/Dockerfile`：agent runner 镜像（`nanoclaw-agent`），用于任务/容器执行链路
+
+构建 agent 镜像：
 
 ```bash
 cd container
@@ -129,3 +163,4 @@ cd container
 - Lint：`ruff`
 - 测试：`pytest`（`3.9`、`3.11`、`3.12`）
 - 打包：`build` + `twine check`
+- Docker smoke：`./scripts/docker-smoke.sh`
