@@ -43,6 +43,12 @@ export NANOCLAW_HOME=/path/to/nanoclaw-home
 - `$NANOCLAW_HOME/store/messages.db`：SQLite 状态库
 - `$NANOCLAW_HOME/data/`：频道与 IPC 运行数据
 
+可选（非运行时必需）目录：
+
+- `assets/`：品牌与展示素材
+- `deploy/`：部署模板（如 launchd）
+- `config-examples/`：配置示例
+
 ## Setup 流程
 
 逐步执行：
@@ -57,11 +63,7 @@ python3 -m nanoclaw.setup --step service
 python3 -m nanoclaw.setup --step verify
 ```
 
-脚本入口（行为一致）：
-
-```bash
-./scripts/setup.sh verify
-```
+兼容入口（行为一致，可选）：`./scripts/setup.sh`、`./setup.sh`
 
 ## 频道配置
 
@@ -100,7 +102,7 @@ NANOCLAW_WEBHOOK_OUTBOUND_URL=https://example.com/outbound  # 可选
 必填字段：`chat_jid`、`sender`、`sender_name`、`content`  
 可选字段：`timestamp`、`chat_name`、`is_group`
 
-## 开发命令
+## 推荐命令
 
 ```bash
 make lint        # ruff check nanoclaw tests
@@ -109,37 +111,23 @@ make build       # 构建 sdist + wheel
 make check       # lint + test + build
 ```
 
-也可直接执行：
-
-```bash
-.venv/bin/python -m ruff check nanoclaw tests
-.venv/bin/python -m pytest
-.venv/bin/python -m build
-```
-
 ## Docker 化运行
 
-主服务容器（仓库根目录）：
+主服务容器（推荐流程）：
 
 ```bash
-./container/build.sh local
-docker compose build
-docker compose up -d
+make docker-build
+make docker-up
 docker compose logs -f nanoclaw
+make docker-down
 ```
 
 前置条件：已安装 Docker Engine 与 Docker Compose 插件。
 
-停止并清理：
-
-```bash
-docker compose down
-```
-
 执行 Docker smoke 测试：
 
 ```bash
-./scripts/docker-smoke.sh
+make docker-smoke
 ```
 
 Smoke 覆盖内容：
@@ -164,6 +152,10 @@ docker.sock 安全说明：
 cd container
 ./build.sh
 ```
+
+兼容方式：
+
+- 仍可直接使用 `docker compose ...` 与 `./scripts/docker-smoke.sh`。
 
 ## CI 说明
 

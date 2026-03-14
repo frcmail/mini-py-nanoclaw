@@ -1,17 +1,14 @@
 from __future__ import annotations
 
 import json
+import time
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
 
 from ..config import DATA_DIR
 from ..types import NewMessage
+from .common import atomic_write_json, ensure_dirs, utc_now_iso
 from .registry import ChannelOpts, register_channel
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 class LocalFileChannel:
@@ -27,8 +24,7 @@ class LocalFileChannel:
         self._connected = False
 
     async def connect(self) -> None:
-        self._inbound_dir.mkdir(parents=True, exist_ok=True)
-        self._outbound_dir.mkdir(parents=True, exist_ok=True)
+        ensure_dirs((self._inbound_dir, self._outbound_dir))
         self._connected = True
 
     async def disconnect(self) -> None:
@@ -44,13 +40,11 @@ class LocalFileChannel:
         payload = {
             "jid": jid,
             "text": text,
-            "timestamp": _now_iso(),
+            "timestamp": utc_now_iso(),
         }
-        filename = f"{int(datetime.now(timezone.utc).timestamp() * 1000)}-{uuid.uuid4().hex[:8]}.json"
+        filename = f"{int(time.time() * 1000)}-{uuid.uuid4().hex[:8]}.json"
         path = self._outbound_dir / filename
-        tmp = path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(payload, ensure_ascii=True), encoding="utf-8")
-        tmp.rename(path)
+        atomic_write_json(path, payload)
 
     async def poll(self) -> None:
         if not self._connected:
@@ -65,7 +59,7 @@ class LocalFileChannel:
                 continue
 
             chat_jid = str(data.get("chat_jid") or "local:main")
-            timestamp = str(data.get("timestamp") or _now_iso())
+            timestamp = str(data.get("timestamp") or utc_now_iso())
             sender = str(data.get("sender") or "local:user")
             sender_name = str(data.get("sender_name") or "User")
             content = str(data.get("content") or "")

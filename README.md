@@ -43,6 +43,12 @@ Key runtime directories:
 - `$NANOCLAW_HOME/store/messages.db`: SQLite state
 - `$NANOCLAW_HOME/data/`: channel and IPC runtime data
 
+Optional (non-runtime-critical) repository assets:
+
+- `assets/`: branding and presentation images
+- `deploy/`: deployment templates (for example launchd)
+- `config-examples/`: sample configs
+
 ## Setup Flow
 
 Run individual setup steps:
@@ -57,11 +63,7 @@ python3 -m nanoclaw.setup --step service
 python3 -m nanoclaw.setup --step verify
 ```
 
-Helper script (same behavior):
-
-```bash
-./scripts/setup.sh verify
-```
+Compatibility wrappers (same behavior, optional): `./scripts/setup.sh`, `./setup.sh`
 
 ## Channels
 
@@ -100,7 +102,7 @@ Inbound API: `POST /inbound` with `Authorization: Bearer <token>`
 Required JSON fields: `chat_jid`, `sender`, `sender_name`, `content`  
 Optional fields: `timestamp`, `chat_name`, `is_group`
 
-## Development Commands
+## Recommended Commands
 
 ```bash
 make lint        # ruff check nanoclaw tests
@@ -109,37 +111,23 @@ make build       # build sdist + wheel
 make check       # lint + test + build
 ```
 
-Direct commands:
-
-```bash
-.venv/bin/python -m ruff check nanoclaw tests
-.venv/bin/python -m pytest
-.venv/bin/python -m build
-```
-
 ## Dockerized Run
 
-Main service container (this repo root):
+Main service container (recommended flow):
 
 ```bash
-./container/build.sh local
-docker compose build
-docker compose up -d
+make docker-build
+make docker-up
 docker compose logs -f nanoclaw
+make docker-down
 ```
 
 Prerequisite: Docker Engine + Docker Compose plugin.
 
-Stop and cleanup:
-
-```bash
-docker compose down
-```
-
 Run Docker smoke test:
 
 ```bash
-./scripts/docker-smoke.sh
+make docker-smoke
 ```
 
 Smoke coverage:
@@ -164,6 +152,10 @@ Build the agent image:
 cd container
 ./build.sh
 ```
+
+Compatibility:
+
+- You can still use `docker compose ...` and `./scripts/docker-smoke.sh` directly.
 
 ## CI
 

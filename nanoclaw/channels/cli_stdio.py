@@ -6,15 +6,11 @@ import sys
 import threading
 import time
 import uuid
-from datetime import datetime, timezone
 from typing import TextIO
 
 from ..types import NewMessage
+from .common import utc_now_iso
 from .registry import ChannelOpts, register_channel
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 class CliStdioChannel:
@@ -57,7 +53,7 @@ class CliStdioChannel:
             "type": "outbound",
             "jid": jid,
             "text": text,
-            "timestamp": _now_iso(),
+            "timestamp": utc_now_iso(),
         }
         self._output_stream.write(json.dumps(payload, ensure_ascii=True) + "\n")
         flush = getattr(self._output_stream, "flush", None)
@@ -139,7 +135,7 @@ class CliStdioChannel:
             "chat_name": parsed.get("chat_name"),
             "is_group": parsed.get("is_group", False),
             "content": content,
-            "timestamp": str(parsed.get("timestamp") or _now_iso()),
+            "timestamp": str(parsed.get("timestamp") or utc_now_iso()),
             "is_from_me": bool(parsed.get("is_from_me", False)),
             "is_bot_message": bool(parsed.get("is_bot_message", False)),
         }

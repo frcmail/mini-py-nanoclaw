@@ -8,17 +8,13 @@ import threading
 import time
 import uuid
 import urllib.request
-from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from ..config import DATA_DIR
 from ..types import NewMessage
+from .common import atomic_write_json, ensure_dirs, utc_now_iso
 from .registry import ChannelOpts, register_channel
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 class WebhookHttpChannel:
@@ -60,7 +56,7 @@ class WebhookHttpChannel:
         if not self._token:
             raise ValueError("NANOCLAW_WEBHOOK_TOKEN is required for webhook-http channel")
 
-        self._outbound_dir.mkdir(parents=True, exist_ok=True)
+        ensure_dirs((self._outbound_dir,))
 
         handler = self._build_handler()
         self._server = ThreadingHTTPServer((self._host, self._port), handler)
@@ -88,7 +84,7 @@ class WebhookHttpChannel:
         payload = {
             "jid": jid,
             "text": text,
-            "timestamp": _now_iso(),
+            "timestamp": utc_now_iso(),
         }
         self._write_outbound_file(payload)
 
@@ -172,9 +168,7 @@ class WebhookHttpChannel:
             seq = self._filename_seq
         filename = f"{time.time_ns():020d}-{seq:08d}.json"
         path = self._outbound_dir / filename
-        tmp = path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(payload, ensure_ascii=True), encoding="utf-8")
-        tmp.rename(path)
+        atomic_write_json(path, payload)
 
     def _post_outbound(self, payload: dict) -> None:
         if not self._outbound_url:
@@ -217,7 +211,7 @@ def _validate_payload(payload: object) -> dict | None:
 
     timestamp = payload.get("timestamp")
     if not isinstance(timestamp, str) or not timestamp:
-        timestamp = _now_iso()
+        timestamp = utc_now_iso()
 
     return {
         "id": payload.get("id"),

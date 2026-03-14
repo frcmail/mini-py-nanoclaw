@@ -1,6 +1,8 @@
 .git
 .github
 .claude
+.env
+.mcp.json
 .venv
 .pytest_cache
 .ruff_cache
