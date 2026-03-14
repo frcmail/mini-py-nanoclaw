@@ -1,46 +1,51 @@
 # mini-py-nanoclaw
 
-Pure Python NanoClaw implementation.
+Pure Python NanoClaw runtime.
 
-## Status
+Chinese documentation: [README_zh.md](README_zh.md)
 
-- Runtime is Python-only (`nanoclaw`).
-- Setup is Python-only (`python -m nanoclaw.setup --step ...`).
-- Container agent runner is Python-only (`nanoclaw.agent_runner`).
-- Legacy Node/TypeScript runtime paths were removed from the main execution path.
+## What This Repo Provides
 
-## Quality Gates
+- Single Python runtime package: `nanoclaw`
+- Python setup flow: `python -m nanoclaw.setup --step <name>`
+- Python container agent runner: `python -m nanoclaw.agent_runner`
+- Multi-channel runtime: `local-file`, `cli-stdio`, `webhook-http`
 
-- CI runs on push and pull request.
-- Lint: `ruff`
-- Tests: `pytest` matrix (`3.9`, `3.11`, `3.12`)
-- Packaging check: wheel/sdist build + `twine check`
+## Quick Start (3 Minutes)
 
-## Quick Start
-
+1. Create a virtual environment and install dependencies.
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -e .[dev]
+```
+
+2. (Optional) copy env template.
+```bash
+cp .env.example .env
+```
+
+3. Start service.
+```bash
 .venv/bin/python -m nanoclaw
 ```
 
-By default runtime data lives in `~/.nanoclaw` (`NANOCLAW_HOME`). Override if needed:
+## Runtime Paths
+
+Default runtime home is `~/.nanoclaw` (override with `NANOCLAW_HOME`):
 
 ```bash
 export NANOCLAW_HOME=/path/to/nanoclaw-home
 ```
 
-Group memory is managed at `$NANOCLAW_HOME/groups/<folder>/CLAUDE.md` (runtime-only, not tracked in this repo).
+Key runtime directories:
 
-Copy environment template when needed:
+- `$NANOCLAW_HOME/groups/<folder>/CLAUDE.md`: group memory files
+- `$NANOCLAW_HOME/store/messages.db`: SQLite state
+- `$NANOCLAW_HOME/data/`: channel and IPC runtime data
 
-```bash
-cp .env.example .env
-```
+## Setup Flow
 
-## Setup Steps
-
-Run setup steps individually:
+Run individual setup steps:
 
 ```bash
 python3 -m nanoclaw.setup --step environment
@@ -52,21 +57,36 @@ python3 -m nanoclaw.setup --step service
 python3 -m nanoclaw.setup --step verify
 ```
 
-Or via helper script:
+Helper script (same behavior):
 
 ```bash
-./scripts/setup.sh environment
+./scripts/setup.sh verify
 ```
 
 ## Channels
 
-Configure channels via `NANOCLAW_CHANNELS`:
+Enable channels with `NANOCLAW_CHANNELS` (comma-separated):
 
 ```bash
 NANOCLAW_CHANNELS=local-file,cli-stdio,webhook-http
 ```
 
-Webhook channel variables:
+`local-file` channel:
+
+- Inbound dir: `$NANOCLAW_HOME/data/channels/local-file/inbound`
+- Outbound dir: `$NANOCLAW_HOME/data/channels/local-file/outbound`
+
+Inbound file example (`*.json`):
+```json
+{"chat_jid":"local:main","sender":"local:user","sender_name":"User","content":"hello"}
+```
+
+`cli-stdio` channel:
+
+- Reads one line per inbound message from `stdin`
+- Writes outbound messages as JSON lines to `stdout`
+
+`webhook-http` channel:
 
 ```bash
 NANOCLAW_WEBHOOK_HOST=127.0.0.1
@@ -75,30 +95,26 @@ NANOCLAW_WEBHOOK_TOKEN=your-bearer-token
 NANOCLAW_WEBHOOK_OUTBOUND_URL=https://example.com/outbound  # optional
 ```
 
-Inbound webhook payload (`POST /inbound`):
+Inbound API: `POST /inbound` with `Authorization: Bearer <token>`
 
-- Required: `chat_jid`, `sender`, `sender_name`, `content`
-- Optional: `timestamp`, `chat_name`, `is_group`
+Required JSON fields: `chat_jid`, `sender`, `sender_name`, `content`  
+Optional fields: `timestamp`, `chat_name`, `is_group`
 
-## Running Tests
+## Development Commands
 
 ```bash
-.venv/bin/python -m pytest
+make lint        # ruff check nanoclaw tests
+make test        # pytest
+make build       # build sdist + wheel
+make check       # lint + test + build
 ```
 
-## Lint
+Direct commands:
 
 ```bash
 .venv/bin/python -m ruff check nanoclaw tests
-```
-
-## Unified Commands
-
-```bash
-make lint
-make test
-make build
-make check
+.venv/bin/python -m pytest
+.venv/bin/python -m build
 ```
 
 ## Container Build
@@ -107,3 +123,9 @@ make check
 cd container
 ./build.sh
 ```
+
+## CI
+
+- Lint: `ruff`
+- Tests: `pytest` matrix (`3.9`, `3.11`, `3.12`)
+- Packaging: `build` + `twine check`
