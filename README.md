@@ -142,6 +142,12 @@ Run Docker smoke test:
 ./scripts/docker-smoke.sh
 ```
 
+Smoke coverage:
+
+- Build service + agent images
+- Run setup steps in container (`environment/container/groups/register/verify`)
+- Bring up `docker compose` and verify `nanoclaw` service is running
+
 Docker socket note:
 
 - Compose mounts `/var/run/docker.sock` into the service container so NanoClaw can continue to launch agent containers.

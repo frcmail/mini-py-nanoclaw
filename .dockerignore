@@ -1,5 +1,6 @@
 .git
 .github
+.claude
 .venv
 .pytest_cache
 .ruff_cache
@@ -16,4 +17,11 @@ groups
 assets
 deploy
 config-examples
+container
+scripts
+tests
+README_zh.md
+CHANGELOG.md
+CONTRIBUTING.md
+CLAUDE.md
 .DS_Store

@@ -142,6 +142,12 @@ docker compose down
 ./scripts/docker-smoke.sh
 ```
 
+Smoke 覆盖内容：
+
+- 构建主服务与 agent 镜像
+- 在容器内执行 setup 关键步骤（`environment/container/groups/register/verify`）
+- 启动 `docker compose` 并验证 `nanoclaw` 服务处于运行状态
+
 docker.sock 安全说明：
 
 - Compose 默认把宿主机 `/var/run/docker.sock` 挂载到服务容器，确保 NanoClaw 仍可拉起 agent 容器。
