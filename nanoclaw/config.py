@@ -62,6 +62,10 @@ IDLE_TIMEOUT = _as_int(os.getenv("IDLE_TIMEOUT"), 1800000)
 MAX_CONCURRENT_CONTAINERS = max(1, _as_int(os.getenv("MAX_CONCURRENT_CONTAINERS"), 5))
 CONTAINER_RUNTIME_BIN = os.getenv("CONTAINER_RUNTIME_BIN", "docker")
 CONTAINER_HOST_GATEWAY = os.getenv("CONTAINER_HOST_GATEWAY", "host.docker.internal")
+REQUIRE_CONTAINER_RUNTIME = _as_bool(
+    os.getenv("NANOCLAW_REQUIRE_CONTAINER_RUNTIME"),
+    default=False,
+)
 
 TRIGGER_PATTERN = re.compile(rf"^@{re.escape(ASSISTANT_NAME)}\\b", re.IGNORECASE)
 TIMEZONE = os.getenv("TZ") or str(datetime.now().astimezone().tzinfo or "UTC")

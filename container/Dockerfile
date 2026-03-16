@@ -27,10 +27,10 @@ ENV AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 
 WORKDIR /app
-COPY pyproject.toml /app/pyproject.toml
+COPY pyproject.toml README.md /app/
 COPY nanoclaw /app/nanoclaw
 
-RUN pip install --no-cache-dir croniter==2.0.7
+RUN pip install --no-cache-dir /app
 
 RUN mkdir -p /workspace/group /workspace/global /workspace/extra /workspace/ipc/messages /workspace/ipc/tasks /workspace/ipc/input
 

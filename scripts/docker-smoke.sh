@@ -38,7 +38,23 @@ echo "[docker-smoke] building service image: ${SERVICE_IMAGE}"
 ${CONTAINER_RUNTIME} build -t "${SERVICE_IMAGE}" -f Dockerfile .
 
 echo "[docker-smoke] building agent image: ${AGENT_IMAGE}"
-${CONTAINER_RUNTIME} build -t "${AGENT_IMAGE}" -f container/Dockerfile container
+${CONTAINER_RUNTIME} build -t "${AGENT_IMAGE}" -f container/Dockerfile .
+
+echo "[docker-smoke] validating agent entrypoint"
+AGENT_OUTPUT=$(
+  printf '{"prompt":"smoke","groupFolder":"main","chatJid":"local:main","isMain":true}' \
+    | ${CONTAINER_RUNTIME} run --rm -i "${AGENT_IMAGE}"
+)
+if ! printf '%s' "${AGENT_OUTPUT}" | grep -q -- "---NANOCLAW_OUTPUT_START---"; then
+  echo "[docker-smoke] agent output start marker missing" >&2
+  printf '%s\n' "${AGENT_OUTPUT}" >&2
+  exit 1
+fi
+if ! printf '%s' "${AGENT_OUTPUT}" | grep -q -- "---NANOCLAW_OUTPUT_END---"; then
+  echo "[docker-smoke] agent output end marker missing" >&2
+  printf '%s\n' "${AGENT_OUTPUT}" >&2
+  exit 1
+fi
 
 echo "[docker-smoke] running setup smoke in container"
 ${CONTAINER_RUNTIME} run --rm \

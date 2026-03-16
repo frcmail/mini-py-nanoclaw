@@ -6,7 +6,16 @@ from .config import CONTAINER_RUNTIME_BIN
 from .logger import logger
 
 
-def ensure_container_runtime_running() -> None:
+_OPTIONAL_RUNTIME_WARNING_EMITTED = False
+
+
+def _runtime_error_message(exc: Exception) -> str:
+    return f"{CONTAINER_RUNTIME_BIN} runtime check failed: {exc}"
+
+
+def ensure_container_runtime_running(required: bool = True) -> bool:
+    global _OPTIONAL_RUNTIME_WARNING_EMITTED
+
     try:
         subprocess.run(
             [CONTAINER_RUNTIME_BIN, "info"],
@@ -15,9 +24,20 @@ def ensure_container_runtime_running() -> None:
             text=True,
             timeout=10,
         )
+        return True
     except Exception as exc:
-        logger.error("container runtime check failed: %s", exc)
-        raise RuntimeError("Container runtime is required but failed to start") from exc
+        msg = _runtime_error_message(exc)
+        if required:
+            logger.error(msg)
+            raise RuntimeError(f"Container runtime is required but unavailable: {msg}") from exc
+
+        if not _OPTIONAL_RUNTIME_WARNING_EMITTED:
+            logger.warning(
+                "%s; continuing in degraded mode (set NANOCLAW_REQUIRE_CONTAINER_RUNTIME=1 to enforce)",
+                msg,
+            )
+            _OPTIONAL_RUNTIME_WARNING_EMITTED = True
+        return False
 
 
 def cleanup_orphans() -> None:

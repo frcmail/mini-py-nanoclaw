@@ -11,6 +11,7 @@ DOC_PATHS = [
     REPO_ROOT / ".github" / "PULL_REQUEST_TEMPLATE.md",
     REPO_ROOT / ".github" / "workflows" / "ci.yml",
 ]
+DOC_PATHS.extend(sorted((REPO_ROOT / ".claude" / "skills").glob("*/SKILL.md")))
 
 
 def test_no_legacy_tests_py_references() -> None:

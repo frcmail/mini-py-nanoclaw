@@ -33,13 +33,13 @@ git remote add upstream https://github.com/qwibitai/nanoclaw.git
 Execute in order and parse status blocks:
 
 ```bash
-python -m mini_py_nanoclaw.setup --step environment
-python -m mini_py_nanoclaw.setup --step container
-python -m mini_py_nanoclaw.setup --step groups
-python -m mini_py_nanoclaw.setup --step register
-python -m mini_py_nanoclaw.setup --step mounts
-python -m mini_py_nanoclaw.setup --step service
-python -m mini_py_nanoclaw.setup --step verify
+python -m nanoclaw.setup --step environment
+python -m nanoclaw.setup --step container
+python -m nanoclaw.setup --step groups
+python -m nanoclaw.setup --step register
+python -m nanoclaw.setup --step mounts
+python -m nanoclaw.setup --step service
+python -m nanoclaw.setup --step verify
 ```
 
 Expected behaviors:
@@ -77,7 +77,7 @@ Webhook inbound contract (`POST /inbound`):
 Run service:
 
 ```bash
-python -m mini_py_nanoclaw
+python -m nanoclaw
 ```
 
 Run tests:
@@ -88,6 +88,6 @@ python -m pytest tests
 
 ## 5) Quick recovery checklist
 
-- Setup check: `python -m mini_py_nanoclaw.setup --step verify`
-- Re-register main group: `python -m mini_py_nanoclaw.setup --step register`
-- Recreate mount allowlist: `python -m mini_py_nanoclaw.setup --step mounts`
+- Setup check: `python -m nanoclaw.setup --step verify`
+- Re-register main group: `python -m nanoclaw.setup --step register`
+- Recreate mount allowlist: `python -m nanoclaw.setup --step mounts`

@@ -52,7 +52,7 @@ git diff --name-only $BASE..upstream/main
 ```
 
 Group likely conflict areas:
-- Python runtime: `mini_py_nanoclaw/`
+- Python runtime: `nanoclaw/`
 - Tests: `tests/`
 - Core skills: `.claude/skills/`
 - Infra/docs: `.github/`, `README*`, `container/`, `deploy/launchd/`

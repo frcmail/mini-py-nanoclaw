@@ -12,8 +12,8 @@ Use this guide for runtime failures, message routing issues, or container execut
 Run:
 
 ```bash
-python -m mini_py_nanoclaw.setup --step environment
-python -m mini_py_nanoclaw.setup --step verify
+python -m nanoclaw.setup --step environment
+python -m nanoclaw.setup --step verify
 python -m pytest tests
 ```
 
@@ -22,7 +22,7 @@ If tests fail, fix test-reported regressions first.
 ## 2) Run service in foreground
 
 ```bash
-LOG_LEVEL=debug python -m mini_py_nanoclaw
+LOG_LEVEL=debug python -m nanoclaw
 ```
 
 Observe stdout/stderr directly for:
@@ -62,7 +62,7 @@ Observe stdout/stderr directly for:
 If setup container step reports `docker_not_running` or `docker_missing`, run:
 
 ```bash
-python -m mini_py_nanoclaw.setup --step container
+python -m nanoclaw.setup --step container
 ```
 
 Then start/repair Docker and retest.

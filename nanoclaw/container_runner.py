@@ -9,7 +9,8 @@ import uuid
 from dataclasses import dataclass
 from typing import Awaitable, Callable, Optional
 
-from .config import CONTAINER_TIMEOUT
+from .config import CONTAINER_TIMEOUT, REQUIRE_CONTAINER_RUNTIME
+from .container_runtime import ensure_container_runtime_running
 from .group_folder import resolve_group_ipc_path
 from .mount_security import validate_additional_mounts
 from .types import RegisteredGroup
@@ -85,14 +86,29 @@ async def run_container_agent(
     on_output: Optional[Callable[[ContainerOutput], Awaitable[None]]] = None,
     command: Optional[str] = None,
 ) -> ContainerOutput:
+    try:
+        ensure_container_runtime_running(required=REQUIRE_CONTAINER_RUNTIME)
+    except RuntimeError as exc:
+        return ContainerOutput(status="error", result=None, error=str(exc))
+
     cmd = command or DEFAULT_AGENT_COMMAND
-    args = shlex.split(cmd)
-    proc = await asyncio.create_subprocess_exec(
-        *args,
-        stdin=asyncio.subprocess.PIPE,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
+    try:
+        args = shlex.split(cmd)
+    except ValueError as exc:
+        return ContainerOutput(status="error", result=None, error=f"Invalid agent command: {exc}")
+
+    if not args:
+        return ContainerOutput(status="error", result=None, error="Agent command is empty")
+
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *args,
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+    except OSError as exc:
+        return ContainerOutput(status="error", result=None, error=f"Failed to start agent process: {exc}")
 
     container_name = f"nanoclaw-py-{group.folder}-{uuid.uuid4().hex[:8]}"
     if on_process is not None:
@@ -119,7 +135,11 @@ async def run_container_agent(
         ensure_ascii=True,
     )
 
-    timeout_ms = group.container_config.timeout if group.container_config and group.container_config.timeout else CONTAINER_TIMEOUT
+    timeout_ms = (
+        group.container_config.timeout
+        if group.container_config and group.container_config.timeout
+        else CONTAINER_TIMEOUT
+    )
 
     try:
         stdout, stderr = await asyncio.wait_for(proc.communicate(payload.encode("utf-8")), timeout=timeout_ms / 1000)

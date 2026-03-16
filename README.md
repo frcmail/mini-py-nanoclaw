@@ -140,6 +140,7 @@ Docker socket note:
 
 - Compose mounts `/var/run/docker.sock` into the service container so NanoClaw can continue to launch agent containers.
 - This grants elevated host control to the container. Use only on trusted local/controlled environments.
+- Set `NANOCLAW_REQUIRE_CONTAINER_RUNTIME=1` to enforce fail-fast startup when runtime is unavailable. Default `0` keeps startup in degraded mode.
 
 ### Container Roles
 

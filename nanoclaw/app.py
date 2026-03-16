@@ -12,6 +12,7 @@ from .config import (
     CREDENTIAL_PROXY_PORT,
     POLL_INTERVAL,
     PROXY_BIND_HOST,
+    REQUIRE_CONTAINER_RUNTIME,
     TIMEZONE,
     TRIGGER_PATTERN,
 )
@@ -117,8 +118,9 @@ class NanoClawApp:
             raise RuntimeError("No channels connected")
 
     async def start_background_services(self) -> None:
-        ensure_container_runtime_running()
-        cleanup_orphans()
+        runtime_available = ensure_container_runtime_running(required=REQUIRE_CONTAINER_RUNTIME)
+        if runtime_available:
+            cleanup_orphans()
 
         self._credential_proxy = start_credential_proxy(CREDENTIAL_PROXY_PORT, PROXY_BIND_HOST)
 

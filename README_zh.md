@@ -140,6 +140,7 @@ docker.sock 安全说明：
 
 - Compose 默认把宿主机 `/var/run/docker.sock` 挂载到服务容器，确保 NanoClaw 仍可拉起 agent 容器。
 - 该能力等价于较高宿主机权限，只建议在可信本机/受控环境中使用。
+- 可通过 `NANOCLAW_REQUIRE_CONTAINER_RUNTIME=1` 开启严格模式：运行时不可用即启动失败。默认 `0` 为降级启动。
 
 ### 容器职责划分
 
