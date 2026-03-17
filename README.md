@@ -1,119 +1,191 @@
 # mini-py-nanoclaw
 
-Pure Python NanoClaw runtime.
+Pure Python NanoClaw runtime (`nanoclaw` package), with no Node runtime dependency in the main service path.
 
-Chinese documentation: [README_zh.md](README_zh.md)
+Chinese version: [README_zh.md](README_zh.md)
 
-## What This Repo Provides
+## Overview
 
-- Single Python runtime package: `nanoclaw`
-- Python setup flow: `python -m nanoclaw.setup --step <name>`
-- Python container agent runner: `python -m nanoclaw.agent_runner`
-- Multi-channel runtime: `local-file`, `cli-stdio`, `webhook-http`
+This repository provides:
 
-## Quick Start (3 Minutes)
+- Runtime entry: `python -m nanoclaw`
+- Setup entry: `python -m nanoclaw.setup --step <name>`
+- Agent runtime entry: `python -m nanoclaw.agent_runner`
+- Channels: `local-file`, `cli-stdio`, `webhook-http`
 
-1. Create a virtual environment and install dependencies.
+Main runtime data is stored in `NANOCLAW_HOME` (default: `~/.nanoclaw`).
+
+## Quick Start
+
+1. Install
+
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -e .[dev]
+cp .env.example .env  # optional
 ```
 
-2. (Optional) copy env template.
+2. Run setup checks
+
 ```bash
-cp .env.example .env
+./setup.sh environment
+./setup.sh groups
+./setup.sh register
+./setup.sh verify
 ```
 
-3. Start service.
+3. Start service
+
 ```bash
 .venv/bin/python -m nanoclaw
 ```
 
-## Runtime Paths
-
-Default runtime home is `~/.nanoclaw` (override with `NANOCLAW_HOME`):
+4. Send a test message via `local-file`
 
 ```bash
-export NANOCLAW_HOME=/path/to/nanoclaw-home
+mkdir -p ~/.nanoclaw/data/channels/local-file/inbound
+cat > ~/.nanoclaw/data/channels/local-file/inbound/hello.json <<'JSON'
+{"chat_jid":"local:main","sender":"local:user","sender_name":"User","content":"hello"}
+JSON
 ```
 
-Key runtime directories:
+Then check outbound files under:
 
-- `$NANOCLAW_HOME/groups/<folder>/CLAUDE.md`: group memory files
+- `~/.nanoclaw/data/channels/local-file/outbound/`
+
+## Runtime Layout
+
+Default `NANOCLAW_HOME` is `~/.nanoclaw`.
+
+Important paths:
+
+- `$NANOCLAW_HOME/groups/<folder>/CLAUDE.md`: per-group memory file
 - `$NANOCLAW_HOME/store/messages.db`: SQLite state
-- `$NANOCLAW_HOME/data/`: channel and IPC runtime data
+- `$NANOCLAW_HOME/data/channels/`: channel runtime files
+- `$NANOCLAW_HOME/data/ipc/`: IPC runtime files
 
-Optional (non-runtime-critical) repository assets:
+Repository directories that are not required at runtime:
 
-- `assets/`: branding and presentation images
-- `deploy/`: deployment templates (for example launchd)
-- `config-examples/`: sample configs
+- `assets/` (branding)
+- `deploy/` (deployment templates)
+- `config-examples/` (sample configs)
 
-## Setup Flow
+## Setup Steps
 
-Run individual setup steps:
+Use either `python -m nanoclaw.setup --step <name>` or wrapper `./setup.sh <step>`.
+
+Available steps:
+
+1. `environment`: verify Python version and platform
+2. `container`: check container runtime availability
+3. `groups`: create default group memory files
+4. `register`: register main local group
+5. `mounts`: generate mount allowlist config if missing
+6. `service`: print service mode hint
+7. `verify`: verify required runtime directories
+
+Full sequence:
 
 ```bash
-python3 -m nanoclaw.setup --step environment
-python3 -m nanoclaw.setup --step container
-python3 -m nanoclaw.setup --step groups
-python3 -m nanoclaw.setup --step register
-python3 -m nanoclaw.setup --step mounts
-python3 -m nanoclaw.setup --step service
-python3 -m nanoclaw.setup --step verify
+python -m nanoclaw.setup --step environment
+python -m nanoclaw.setup --step container
+python -m nanoclaw.setup --step groups
+python -m nanoclaw.setup --step register
+python -m nanoclaw.setup --step mounts
+python -m nanoclaw.setup --step service
+python -m nanoclaw.setup --step verify
 ```
 
-Compatibility wrappers (same behavior, optional): `./scripts/setup.sh`, `./setup.sh`
+Compatibility wrappers:
+
+- `./setup.sh`
+- `./scripts/setup.sh`
+
+## Configuration
+
+Key environment variables:
+
+| Variable | Default | Description |
+|---|---|---|
+| `NANOCLAW_HOME` | `~/.nanoclaw` | Runtime home (groups/store/data) |
+| `ASSISTANT_NAME` | `Andy` | Assistant display/trigger name |
+| `LOG_LEVEL` | `INFO` | Log level |
+| `NANOCLAW_CHANNELS` | `local-file` | Comma-separated channel list |
+| `NANOCLAW_WEBHOOK_HOST` | `127.0.0.1` | Webhook bind host |
+| `NANOCLAW_WEBHOOK_PORT` | `8787` | Webhook bind port |
+| `NANOCLAW_WEBHOOK_TOKEN` | empty | Required when webhook channel is enabled |
+| `NANOCLAW_WEBHOOK_OUTBOUND_URL` | empty | Optional webhook outbound callback URL |
+| `CONTAINER_TIMEOUT` | `1800000` | Agent execution timeout (ms) |
+| `MAX_CONCURRENT_CONTAINERS` | `5` | Group queue concurrency limit |
+| `NANOCLAW_REQUIRE_CONTAINER_RUNTIME` | `0` | `1` = fail-fast if runtime unavailable; `0` = degraded startup |
 
 ## Channels
 
-Enable channels with `NANOCLAW_CHANNELS` (comma-separated):
+Enable multiple channels:
 
 ```bash
-NANOCLAW_CHANNELS=local-file,cli-stdio,webhook-http
+export NANOCLAW_CHANNELS=local-file,cli-stdio,webhook-http
 ```
 
-`local-file` channel:
+### local-file
 
-- Inbound dir: `$NANOCLAW_HOME/data/channels/local-file/inbound`
-- Outbound dir: `$NANOCLAW_HOME/data/channels/local-file/outbound`
+- Inbound: `$NANOCLAW_HOME/data/channels/local-file/inbound/*.json`
+- Outbound: `$NANOCLAW_HOME/data/channels/local-file/outbound/*.json`
 
-Inbound file example (`*.json`):
+Inbound example:
+
 ```json
-{"chat_jid":"local:main","sender":"local:user","sender_name":"User","content":"hello"}
+{"chat_jid":"local:main","sender":"local:user","sender_name":"User","content":"hello","is_group":true}
 ```
 
-`cli-stdio` channel:
+### cli-stdio
 
-- Reads one line per inbound message from `stdin`
-- Writes outbound messages as JSON lines to `stdout`
+- Inbound: one line from `stdin` (plain text or JSON)
+- Outbound: JSON lines to `stdout`
 
-`webhook-http` channel:
+Example:
 
 ```bash
-NANOCLAW_WEBHOOK_HOST=127.0.0.1
-NANOCLAW_WEBHOOK_PORT=8787
-NANOCLAW_WEBHOOK_TOKEN=your-bearer-token
-NANOCLAW_WEBHOOK_OUTBOUND_URL=https://example.com/outbound  # optional
+echo '{"chat_jid":"cli:main","sender":"cli:user","sender_name":"CLI","content":"hello"}' | \
+  NANOCLAW_CHANNELS=cli-stdio .venv/bin/python -m nanoclaw
 ```
 
-Inbound API: `POST /inbound` with `Authorization: Bearer <token>`
+### webhook-http
 
-Required JSON fields: `chat_jid`, `sender`, `sender_name`, `content`  
-Optional fields: `timestamp`, `chat_name`, `is_group`
-
-## Recommended Commands
+Required when enabled:
 
 ```bash
-make lint        # ruff check nanoclaw tests
-make test        # pytest
-make build       # build sdist + wheel
-make check       # lint + test + build
+export NANOCLAW_CHANNELS=webhook-http
+export NANOCLAW_WEBHOOK_TOKEN=your-token
 ```
 
-## Dockerized Run
+Inbound endpoint:
 
-Main service container (recommended flow):
+- `POST /inbound`
+- Header: `Authorization: Bearer <token>`
+- Required JSON fields: `chat_jid`, `sender`, `sender_name`, `content`
+- Optional fields: `timestamp`, `chat_name`, `is_group`
+
+Outbound behavior:
+
+- Always writes JSON files to `$NANOCLAW_HOME/data/channels/webhook/outbound/`
+- Optionally POSTs to `NANOCLAW_WEBHOOK_OUTBOUND_URL`
+
+## Development Commands
+
+```bash
+make install-dev
+make lint
+make test
+make build
+make check
+make run
+make setup-verify
+```
+
+## Docker
+
+### Main Service
 
 ```bash
 make docker-build
@@ -122,45 +194,64 @@ docker compose logs -f nanoclaw
 make docker-down
 ```
 
-Prerequisite: Docker Engine + Docker Compose plugin.
-
-Run Docker smoke test:
+### Smoke Test
 
 ```bash
 make docker-smoke
 ```
 
-Smoke coverage:
+Smoke includes:
 
-- Build service + agent images
-- Run setup steps in container (`environment/container/groups/register/verify`)
-- Bring up `docker compose` and verify `nanoclaw` service is running
-
-Docker socket note:
-
-- Compose mounts `/var/run/docker.sock` into the service container so NanoClaw can continue to launch agent containers.
-- This grants elevated host control to the container. Use only on trusted local/controlled environments.
-- Set `NANOCLAW_REQUIRE_CONTAINER_RUNTIME=1` to enforce fail-fast startup when runtime is unavailable. Default `0` keeps startup in degraded mode.
+- Build service image
+- Build agent image
+- Validate agent entrypoint output markers
+- Run setup smoke (`environment/container/groups/register/verify`)
+- Bring up compose and check service status
 
 ### Container Roles
 
-- Root `Dockerfile`: main NanoClaw service image (`python -m nanoclaw`)
-- `container/Dockerfile`: agent runner image (`nanoclaw-agent`) used by task/container execution path
+- Root `Dockerfile`: main service image (`python -m nanoclaw`)
+- `container/Dockerfile`: agent image (`nanoclaw-agent`)
 
-Build the agent image:
+Build agent image directly:
 
 ```bash
-cd container
-./build.sh
+./container/build.sh local
 ```
 
-Compatibility:
+### Security Note for `docker.sock`
 
-- You can still use `docker compose ...` and `./scripts/docker-smoke.sh` directly.
+Compose mounts `/var/run/docker.sock` into service container to keep container runtime ability.
+This effectively grants elevated host-level capability. Use only in trusted environments.
 
 ## CI
 
-- Lint: `ruff`
-- Tests: `pytest` matrix (`3.9`, `3.11`, `3.12`)
-- Packaging: `build` + `twine check`
-- Docker smoke: `./scripts/docker-smoke.sh`
+Current CI jobs:
+
+- Ruff lint
+- Pytest matrix (`3.9`, `3.11`, `3.12`)
+- Package build + `twine check`
+- Docker smoke script
+
+## Troubleshooting
+
+1. `./setup.sh` fails with module import error
+
+- Use repository root as working directory
+- Ensure `.venv` exists or `python3` has `nanoclaw` installed
+
+2. Webhook returns `401 unauthorized`
+
+- Verify `NANOCLAW_WEBHOOK_TOKEN`
+- Verify header format `Authorization: Bearer <token>`
+
+3. Service starts but no response
+
+- Confirm `NANOCLAW_CHANNELS`
+- Check inbound payload has non-empty `content`
+- Run `python -m nanoclaw.setup --step verify`
+
+4. Docker unavailable but service should still run
+
+- Keep `NANOCLAW_REQUIRE_CONTAINER_RUNTIME=0` (default)
+- Set to `1` only when fail-fast behavior is required
