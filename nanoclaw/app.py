@@ -164,7 +164,11 @@ class NanoClawApp:
         for channel in self.channels:
             disconnect = getattr(channel, "disconnect", None)
             if callable(disconnect):
-                await disconnect()
+                try:
+                    await disconnect()
+                except Exception as exc:
+                    channel_name = getattr(channel, "name", type(channel).__name__)
+                    logger.warning("channel disconnect failed channel=%s error=%s", channel_name, exc)
 
     def _on_chat_metadata(
         self,
@@ -199,7 +203,11 @@ class NanoClawApp:
         for channel in self.channels:
             poll = getattr(channel, "poll", None)
             if callable(poll):
-                await poll()
+                try:
+                    await poll()
+                except Exception as exc:
+                    channel_name = getattr(channel, "name", type(channel).__name__)
+                    logger.warning("channel poll failed channel=%s error=%s", channel_name, exc)
 
     async def run_once(self) -> None:
         await self.poll_channels()

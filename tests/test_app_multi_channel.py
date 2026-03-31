@@ -111,3 +111,51 @@ def test_resolve_channel_names_from_env(monkeypatch) -> None:
     monkeypatch.setenv("NANOCLAW_CHANNELS", "local-file,cli-stdio,webhook-http")
     resolved = _resolve_channel_names(["cli-stdio", "local-file", "webhook-http"])
     assert resolved == ["local-file", "cli-stdio", "webhook-http"]
+
+
+@pytest.mark.asyncio
+async def test_poll_channels_continues_after_channel_error() -> None:
+    class BrokenChannel:
+        name = "broken"
+
+        async def poll(self) -> None:
+            raise RuntimeError("boom")
+
+    class HealthyChannel:
+        def __init__(self) -> None:
+            self.polled = False
+
+        async def poll(self) -> None:
+            self.polled = True
+
+    app = NanoClawApp(db=NanoClawDB.in_memory())
+    healthy = HealthyChannel()
+    app.channels = [BrokenChannel(), healthy]
+
+    await app.poll_channels()
+
+    assert healthy.polled is True
+
+
+@pytest.mark.asyncio
+async def test_shutdown_continues_after_channel_disconnect_error() -> None:
+    class BrokenChannel:
+        name = "broken"
+
+        async def disconnect(self) -> None:
+            raise RuntimeError("disconnect failed")
+
+    class HealthyChannel:
+        def __init__(self) -> None:
+            self.disconnected = False
+
+        async def disconnect(self) -> None:
+            self.disconnected = True
+
+    app = NanoClawApp(db=NanoClawDB.in_memory())
+    healthy = HealthyChannel()
+    app.channels = [BrokenChannel(), healthy]
+
+    await app.shutdown()
+
+    assert healthy.disconnected is True

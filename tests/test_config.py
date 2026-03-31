@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import importlib
+
 from nanoclaw.config import _as_bool, _as_int
 
 
@@ -37,3 +39,19 @@ def test_trigger_pattern_matches() -> None:
 def test_trigger_pattern_no_match() -> None:
     from nanoclaw.config import TRIGGER_PATTERN
     assert TRIGGER_PATTERN.search("hello @Bob") is None
+
+
+def test_container_timeout_clamped_lower_bound(monkeypatch) -> None:
+    import nanoclaw.config as config_module
+
+    monkeypatch.setenv("CONTAINER_TIMEOUT", "-1")
+    reloaded = importlib.reload(config_module)
+    assert reloaded.CONTAINER_TIMEOUT == 1000
+
+
+def test_container_timeout_clamped_upper_bound(monkeypatch) -> None:
+    import nanoclaw.config as config_module
+
+    monkeypatch.setenv("CONTAINER_TIMEOUT", "999999999")
+    reloaded = importlib.reload(config_module)
+    assert reloaded.CONTAINER_TIMEOUT == 3600000

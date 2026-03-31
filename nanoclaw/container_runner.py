@@ -171,10 +171,17 @@ async def run_container_agent(
         if group.container_config and group.container_config.timeout
         else CONTAINER_TIMEOUT
     )
+    timeout_ms = max(1000, int(timeout_ms))
 
     try:
         stdout, stderr = await asyncio.wait_for(proc.communicate(payload.encode("utf-8")), timeout=timeout_ms / 1000)
     except asyncio.TimeoutError:
+        logger.warning(
+            "container_runner timeout group=%s jid=%s timeout_ms=%d",
+            group.folder,
+            input_data.chat_jid,
+            timeout_ms,
+        )
         proc.kill()
         await proc.wait()
         return _finish(ContainerOutput(status="error", result=None, error=f"Container timed out after {timeout_ms}ms"))

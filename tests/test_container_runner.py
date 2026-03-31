@@ -52,7 +52,7 @@ async def test_container_runner_timeout() -> None:
             chat_jid="local:main",
             is_main=True,
         ),
-        command=f"{sys.executable} -c 'import time; time.sleep(0.2)'",
+        command=f"{sys.executable} -c 'import time; time.sleep(2)'",
     )
 
     assert output.status == "error"

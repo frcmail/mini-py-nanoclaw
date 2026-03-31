@@ -26,6 +26,10 @@ def _as_int(value: str | None, default: int) -> int:
         return default
 
 
+def _clamp_int(value: int, minimum: int, maximum: int) -> int:
+    return max(minimum, min(maximum, value))
+
+
 env_config = read_env_file(["ASSISTANT_NAME", "ASSISTANT_HAS_OWN_NUMBER"])
 
 ASSISTANT_NAME = os.getenv("ASSISTANT_NAME") or env_config.get("ASSISTANT_NAME") or "Andy"
@@ -58,7 +62,7 @@ GROUPS_DIR = PROJECT_ROOT / "groups"
 DATA_DIR = PROJECT_ROOT / "data"
 
 CONTAINER_IMAGE = os.getenv("CONTAINER_IMAGE", "nanoclaw-agent:latest")
-CONTAINER_TIMEOUT = _as_int(os.getenv("CONTAINER_TIMEOUT"), 1800000)
+CONTAINER_TIMEOUT = _clamp_int(_as_int(os.getenv("CONTAINER_TIMEOUT"), 1800000), 1000, 3600000)
 CONTAINER_MAX_OUTPUT_SIZE = _as_int(os.getenv("CONTAINER_MAX_OUTPUT_SIZE"), 10485760)
 CREDENTIAL_PROXY_PORT = _as_int(os.getenv("CREDENTIAL_PROXY_PORT"), 3001)
 IDLE_TIMEOUT = _as_int(os.getenv("IDLE_TIMEOUT"), 1800000)
