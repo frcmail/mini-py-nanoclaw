@@ -54,7 +54,7 @@ def load_mount_allowlist() -> MountAllowlist | None:
 
     try:
         parsed = json.loads(MOUNT_ALLOWLIST_PATH.read_text(encoding="utf-8"))
-    except Exception as exc:
+    except (json.JSONDecodeError, OSError) as exc:
         logger.error("failed to load mount allowlist: %s", exc)
         return None
 
@@ -71,7 +71,7 @@ def load_mount_allowlist() -> MountAllowlist | None:
         blocked = sorted(set(DEFAULT_BLOCKED_PATTERNS + list(parsed.get("blockedPatterns", []))))
         non_main_ro = bool(parsed.get("nonMainReadOnly", True))
         return MountAllowlist(allowedRoots=roots, blockedPatterns=blocked, nonMainReadOnly=non_main_ro)
-    except Exception as exc:
+    except (KeyError, TypeError, ValueError) as exc:
         logger.error("invalid mount allowlist structure: %s", exc)
         return None
 

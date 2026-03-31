@@ -60,6 +60,11 @@ class LocalFileChannel:
                 file_path.unlink(missing_ok=True)
                 continue
 
+            if not isinstance(data, dict):
+                logger.warning("local-file: expected JSON object in %s", file_path.name)
+                file_path.unlink(missing_ok=True)
+                continue
+
             chat_jid = str(data.get("chat_jid") or "local:main")
             timestamp = str(data.get("timestamp") or utc_now_iso())
             sender = str(data.get("sender") or "local:user")

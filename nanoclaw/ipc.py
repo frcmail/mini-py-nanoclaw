@@ -102,7 +102,7 @@ class IpcWatcher:
                     await self._deps.send_message(chat_jid, text)
             except json.JSONDecodeError:
                 logger.warning("ipc: invalid JSON in %s", file_path.name)
-            except Exception as exc:
+            except (KeyError, TypeError, ValueError, OSError) as exc:
                 logger.warning("ipc: error processing message %s: %s", file_path.name, exc)
             finally:
                 file_path.unlink(missing_ok=True)
@@ -123,7 +123,7 @@ class IpcWatcher:
                 await self._process_task_payload(data, source_group, groups, is_main)
             except json.JSONDecodeError:
                 logger.warning("ipc: invalid task JSON in %s", file_path.name)
-            except Exception as exc:
+            except (KeyError, TypeError, ValueError, OSError) as exc:
                 logger.warning("ipc: error processing task %s: %s", file_path.name, exc)
             finally:
                 file_path.unlink(missing_ok=True)

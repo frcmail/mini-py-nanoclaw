@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 from .group_folder import resolve_group_ipc_path
+from .logger import logger
 
 _IPC_SEQUENCE = itertools.count()
 _IPC_LOCK = threading.Lock()
@@ -62,7 +63,7 @@ def drain_container_inputs(group_folder: str) -> list[str]:
             if data.get("type") == "message" and isinstance(data.get("text"), str):
                 messages.append(data["text"])
         except json.JSONDecodeError:
-            pass
+            logger.warning("ipc_io: invalid JSON in %s", file_path.name)
         finally:
             file_path.unlink(missing_ok=True)
     return messages
