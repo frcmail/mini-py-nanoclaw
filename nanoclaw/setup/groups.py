@@ -24,7 +24,7 @@ def _load_template(folder: str, fallback: str) -> str:
             template = template.joinpath(segment)
         if template.is_file():
             return template.read_text(encoding="utf-8")
-    except Exception:
+    except (TypeError, FileNotFoundError, AttributeError):
         return fallback
     return fallback
 

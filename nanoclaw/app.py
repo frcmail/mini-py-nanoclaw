@@ -251,6 +251,7 @@ class NanoClawApp:
         return groups
 
     async def process_group_messages(self, chat_jid: str) -> bool:
+        t0 = time.monotonic()
         group = self.registered_groups.get(chat_jid)
         if group is None:
             return True
@@ -276,8 +277,6 @@ class NanoClawApp:
                 return True
 
         prompt = format_messages(messages, TIMEZONE)
-
-        self.last_agent_timestamp.get(chat_jid, "")
 
         output_sent = False
         had_error = False
@@ -330,7 +329,9 @@ class NanoClawApp:
             on_output=_on_output,
         )
 
+        elapsed_ms = (time.monotonic() - t0) * 1000
         if result.status == "error" or had_error:
+            logger.warning("process_group_messages jid=%s status=error elapsed_ms=%.0f", chat_jid, elapsed_ms)
             return bool(output_sent)
 
         # Commit cursor only after successful execution.
@@ -341,6 +342,7 @@ class NanoClawApp:
             self.sessions[group.folder] = result.new_session_id
             self.db.set_session(group.folder, result.new_session_id)
 
+        logger.info("process_group_messages jid=%s status=ok elapsed_ms=%.0f", chat_jid, elapsed_ms)
         return True
 
     async def _run_scheduled_task(self, task: ScheduledTask, sessions: dict[str, str]) -> str | None:

@@ -67,7 +67,7 @@ def cleanup_orphans() -> None:
             text=True,
             timeout=10,
         )
-    except Exception as exc:
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError, OSError) as exc:
         logger.warning("failed to list orphaned containers: %s", exc)
         return
 
@@ -81,7 +81,7 @@ def cleanup_orphans() -> None:
                 text=True,
                 timeout=15,
             )
-        except Exception as exc:
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
             logger.debug("failed to stop orphan container %s: %s", name, exc)
             continue
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import threading
+import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
@@ -97,7 +98,7 @@ def start_credential_proxy(port: int, host: str = PROXY_BIND_HOST) -> Credential
                         self.send_header(key, value)
                     self.end_headers()
                     self.wfile.write(response_body)
-            except Exception as exc:
+            except (urllib.error.URLError, urllib.error.HTTPError, OSError, TimeoutError) as exc:
                 logger.error("credential proxy upstream error: %s", exc)
                 body = b"Bad Gateway"
                 self.send_response(502)

@@ -5,6 +5,7 @@ import json
 import os
 import shlex
 import sys
+import time
 import uuid
 from collections.abc import Awaitable
 from dataclasses import dataclass
@@ -15,6 +16,7 @@ from .config import CONTAINER_TIMEOUT, REQUIRE_CONTAINER_RUNTIME
 from .constants import OUTPUT_END_MARKER, OUTPUT_START_MARKER
 from .container_runtime import ensure_container_runtime_running
 from .group_folder import resolve_group_ipc_path
+from .logger import logger
 from .mount_security import validate_additional_mounts
 from .types import RegisteredGroup
 
@@ -93,19 +95,41 @@ async def run_container_agent(
     command: str | None = None,
 ) -> ContainerOutput:
     cmd = command or DEFAULT_AGENT_COMMAND
+    t0 = time.monotonic()
+
+    def _finish(output: ContainerOutput) -> ContainerOutput:
+        elapsed_ms = (time.monotonic() - t0) * 1000
+        if output.status == "error":
+            logger.warning(
+                "container_runner group=%s jid=%s status=error elapsed_ms=%.0f error=%s",
+                group.folder,
+                input_data.chat_jid,
+                elapsed_ms,
+                (output.error or "")[:200],
+            )
+        else:
+            logger.info(
+                "container_runner group=%s jid=%s status=%s elapsed_ms=%.0f",
+                group.folder,
+                input_data.chat_jid,
+                output.status,
+                elapsed_ms,
+            )
+        return output
+
     try:
         args = shlex.split(cmd)
     except ValueError as exc:
-        return ContainerOutput(status="error", result=None, error=f"Invalid agent command: {exc}")
+        return _finish(ContainerOutput(status="error", result=None, error=f"Invalid agent command: {exc}"))
 
     if not args:
-        return ContainerOutput(status="error", result=None, error="Agent command is empty")
+        return _finish(ContainerOutput(status="error", result=None, error="Agent command is empty"))
 
     if _requires_container_runtime(args):
         try:
             ensure_container_runtime_running(required=REQUIRE_CONTAINER_RUNTIME)
         except RuntimeError as exc:
-            return ContainerOutput(status="error", result=None, error=str(exc))
+            return _finish(ContainerOutput(status="error", result=None, error=str(exc)))
 
     try:
         proc = await asyncio.create_subprocess_exec(
@@ -115,7 +139,7 @@ async def run_container_agent(
             stderr=asyncio.subprocess.PIPE,
         )
     except OSError as exc:
-        return ContainerOutput(status="error", result=None, error=f"Failed to start agent process: {exc}")
+        return _finish(ContainerOutput(status="error", result=None, error=f"Failed to start agent process: {exc}"))
 
     container_name = f"nanoclaw-py-{group.folder}-{uuid.uuid4().hex[:8]}"
     if on_process is not None:
@@ -153,7 +177,7 @@ async def run_container_agent(
     except asyncio.TimeoutError:
         proc.kill()
         await proc.wait()
-        return ContainerOutput(status="error", result=None, error=f"Container timed out after {timeout_ms}ms")
+        return _finish(ContainerOutput(status="error", result=None, error=f"Container timed out after {timeout_ms}ms"))
 
     outputs = _extract_markers(stdout.decode("utf-8", errors="ignore"))
     if on_output is not None:
@@ -161,16 +185,18 @@ async def run_container_agent(
             await on_output(output)
 
     if proc.returncode != 0:
-        return ContainerOutput(
-            status="error",
-            result=None,
-            error=f"Container exited with code {proc.returncode}: {stderr.decode('utf-8', errors='ignore')[-2000:]}",
+        return _finish(
+            ContainerOutput(
+                status="error",
+                result=None,
+                error=f"Container exited with code {proc.returncode}: {stderr.decode('utf-8', errors='ignore')[-2000:]}",
+            )
         )
 
     if outputs:
-        return outputs[-1]
+        return _finish(outputs[-1])
 
-    return ContainerOutput(status="error", result=None, error="Failed to parse container output")
+    return _finish(ContainerOutput(status="error", result=None, error="Failed to parse container output"))
 
 
 def write_tasks_snapshot(

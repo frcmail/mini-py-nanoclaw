@@ -16,7 +16,7 @@ def run(_args: list[str]) -> None:
     try:
         subprocess.run([docker_path, "info"], check=True, capture_output=True, text=True, timeout=10)
         ok = True
-    except Exception:
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
         ok = False
 
     emit_status(
