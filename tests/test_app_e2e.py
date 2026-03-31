@@ -9,6 +9,7 @@ from nanoclaw.channels.local_file import LocalFileChannel
 from nanoclaw.channels.registry import ChannelOpts
 from nanoclaw.container_runner import ContainerOutput
 from nanoclaw.db import NanoClawDB
+from nanoclaw.types import NewMessage
 
 
 def _now_iso() -> str:
@@ -65,3 +66,37 @@ async def test_app_end_to_end_with_local_channel(tmp_path) -> None:
     assert payload["text"].startswith("Echo:")
 
     await app.shutdown()
+
+
+def test_recover_pending_messages_uses_lightweight_limit(monkeypatch) -> None:
+    db = NanoClawDB.in_memory()
+    app = NanoClawApp(db=db)
+    app.register_group("local:main", build_default_main_group()[1])
+
+    captured: dict[str, object] = {}
+
+    def fake_get_messages_since(chat_jid: str, since: str, bot_prefix: str, limit: int = 200):
+        captured["chat_jid"] = chat_jid
+        captured["since"] = since
+        captured["bot_prefix"] = bot_prefix
+        captured["limit"] = limit
+        return [
+            NewMessage(
+                id="m1",
+                chat_jid=chat_jid,
+                sender="u",
+                sender_name="U",
+                content="hello",
+                timestamp=_now_iso(),
+            )
+        ]
+
+    queued: list[str] = []
+    monkeypatch.setattr(app.db, "get_messages_since", fake_get_messages_since)
+    monkeypatch.setattr(app.queue, "enqueue_message_check", lambda jid: queued.append(jid))
+
+    app.recover_pending_messages()
+
+    assert captured["chat_jid"] == "local:main"
+    assert captured["limit"] == 1
+    assert queued == ["local:main"]

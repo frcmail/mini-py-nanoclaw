@@ -195,7 +195,7 @@ class NanoClawApp:
     def recover_pending_messages(self) -> None:
         for jid in self.registered_groups:
             since = self.last_agent_timestamp.get(jid, "")
-            pending = self.db.get_messages_since(jid, since, ASSISTANT_NAME)
+            pending = self.db.get_messages_since(jid, since, ASSISTANT_NAME, limit=1)
             if pending:
                 self.queue.enqueue_message_check(jid)
 
