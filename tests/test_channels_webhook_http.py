@@ -26,6 +26,18 @@ def _post(url: str, payload: dict, token: str | None = None) -> tuple[int, str]:
         return exc.code, exc.read().decode("utf-8")
 
 
+def _post_raw(url: str, body: bytes, token: str | None = None) -> tuple[int, str]:
+    headers = {"Content-Type": "application/json"}
+    if token is not None:
+        headers["Authorization"] = f"Bearer {token}"
+    req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            return resp.status, resp.read().decode("utf-8")
+    except urllib.error.HTTPError as exc:
+        return exc.code, exc.read().decode("utf-8")
+
+
 @pytest.mark.asyncio
 async def test_webhook_http_auth_and_inbound_validation(tmp_path) -> None:
     received = []
@@ -73,6 +85,79 @@ async def test_webhook_http_auth_and_inbound_validation(tmp_path) -> None:
 
         assert received == [("webhook:main", "hello webhook", "Tester")]
         assert metadata[0] == ("webhook:main", "webhook-http")
+    finally:
+        await channel.disconnect()
+
+
+@pytest.mark.asyncio
+async def test_webhook_http_rejects_invalid_json_body(tmp_path) -> None:
+    channel = WebhookHttpChannel(
+        ChannelOpts(
+            on_message=lambda jid, msg: None,
+            on_chat_metadata=lambda jid, ts, name, ch, is_group: None,
+            registered_groups=lambda: {},
+        ),
+        host="127.0.0.1",
+        port=0,
+        token="secret-token",
+        base_dir=tmp_path,
+    )
+
+    await channel.connect()
+    try:
+        port = channel.bound_port
+        assert port is not None
+        url = f"http://127.0.0.1:{port}/inbound"
+
+        status, body = _post_raw(url, b"{not-json", token="secret-token")
+        assert status == 400
+        assert "invalid_json" in body
+    finally:
+        await channel.disconnect()
+
+
+@pytest.mark.asyncio
+async def test_webhook_http_rejects_oversized_payload(tmp_path) -> None:
+    channel = WebhookHttpChannel(
+        ChannelOpts(
+            on_message=lambda jid, msg: None,
+            on_chat_metadata=lambda jid, ts, name, ch, is_group: None,
+            registered_groups=lambda: {},
+        ),
+        host="127.0.0.1",
+        port=0,
+        token="secret-token",
+        base_dir=tmp_path,
+    )
+
+    await channel.connect()
+    try:
+        port = channel.bound_port
+        assert port is not None
+        url = f"http://127.0.0.1:{port}/inbound"
+
+        # Send a small body but with a Content-Length claiming over 1 MB
+        small_body = b"{}"
+        req = urllib.request.Request(
+            url,
+            data=small_body,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": "Bearer secret-token",
+                "Content-Length": str(2 * 1024 * 1024),  # 2 MB claim
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=2) as resp:
+                status = resp.status
+                body = resp.read().decode("utf-8")
+        except urllib.error.HTTPError as exc:
+            status = exc.code
+            body = exc.read().decode("utf-8")
+
+        assert status == 413
+        assert "payload_too_large" in body
     finally:
         await channel.disconnect()
 
