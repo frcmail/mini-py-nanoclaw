@@ -45,6 +45,7 @@ class GroupQueue:
         self._base_retry_ms = base_retry_ms
         self._max_retry_ms = max_retry_ms
         self._close_stdin_fn: Callable[[str], None] | None = None
+        self._background_tasks: set[asyncio.Task[object]] = set()
 
     def _get_group(self, group_jid: str) -> GroupState:
         state = self._groups.get(group_jid)
@@ -127,6 +128,8 @@ class GroupQueue:
                 state.retry_count = 0
             else:
                 self._schedule_retry(group_jid, state)
+        except asyncio.CancelledError:
+            raise
         except Exception:
             self._schedule_retry(group_jid, state)
         finally:
@@ -163,7 +166,7 @@ class GroupQueue:
             if not self._shutting_down:
                 self.enqueue_message_check(group_jid)
 
-        asyncio.create_task(_retry())
+        self._create_background_task(_retry())
 
     async def _drain_group(self, group_jid: str) -> None:
         if self._shutting_down:
@@ -192,8 +195,35 @@ class GroupQueue:
             elif state.pending_messages:
                 self._start_run_for_group(group_jid)
 
-    async def shutdown(self, _grace_period_ms: int = 0) -> None:
+    async def shutdown(self, grace_period_ms: int = 0) -> None:
         self._shutting_down = True
+        tasks = list(self._background_tasks)
+        for task in tasks:
+            task.cancel()
+        if not tasks:
+            return
+
+        timeout = None if grace_period_ms <= 0 else grace_period_ms / 1000
+        try:
+            await asyncio.wait_for(
+                asyncio.gather(*tasks, return_exceptions=True),
+                timeout=timeout,
+            )
+        except asyncio.TimeoutError:
+            pass
+        finally:
+            self._background_tasks.clear()
+
+    def _create_background_task(self, coro: Awaitable[None]) -> None:
+        try:
+            task = asyncio.create_task(coro)
+        except RuntimeError:
+            close = getattr(coro, "close", None)
+            if callable(close):
+                close()
+            return
+        self._background_tasks.add(task)
+        task.add_done_callback(self._background_tasks.discard)
 
     def _start_run_for_group(self, group_jid: str) -> None:
         state = self._get_group(group_jid)
@@ -202,7 +232,7 @@ class GroupQueue:
         state.is_task_container = False
         state.pending_messages = False
         self._active_count += 1
-        asyncio.create_task(self._run_for_group(group_jid))
+        self._create_background_task(self._run_for_group(group_jid))
 
     def _start_run_task(self, group_jid: str, task: QueuedTask) -> None:
         state = self._get_group(group_jid)
@@ -211,4 +241,4 @@ class GroupQueue:
         state.is_task_container = True
         state.running_task_id = task.id
         self._active_count += 1
-        asyncio.create_task(self._run_task(group_jid, task))
+        self._create_background_task(self._run_task(group_jid, task))

@@ -42,3 +42,25 @@ async def test_group_queue_retries() -> None:
     await asyncio.sleep(0.08)
 
     assert calls >= 2
+
+
+@pytest.mark.asyncio
+async def test_group_queue_shutdown_cancels_pending_retry() -> None:
+    queue = GroupQueue(max_concurrent_containers=1, base_retry_ms=50)
+    calls = 0
+
+    async def process(_jid: str) -> bool:
+        nonlocal calls
+        calls += 1
+        return False
+
+    queue.set_process_messages_fn(process)
+    queue.enqueue_message_check("g1")
+    await asyncio.sleep(0.02)
+
+    calls_before_shutdown = calls
+    await queue.shutdown()
+    await asyncio.sleep(0.08)
+
+    assert calls_before_shutdown >= 1
+    assert calls == calls_before_shutdown

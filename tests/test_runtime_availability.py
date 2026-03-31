@@ -82,7 +82,7 @@ async def test_run_container_agent_returns_runtime_error_in_strict_mode(monkeypa
     output = await run_container_agent(
         group,
         ContainerInput(prompt="hello", group_folder="main", chat_jid="local:main", is_main=True),
-        command=f"{sys.executable} -m nanoclaw.simple_agent",
+        command="docker run --rm busybox true",
     )
 
     assert output.status == "error"

@@ -8,6 +8,7 @@ import sys
 import uuid
 from collections.abc import Awaitable
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable
 
 from .config import CONTAINER_TIMEOUT, REQUIRE_CONTAINER_RUNTIME
@@ -50,6 +51,11 @@ class AvailableGroup:
     is_registered: bool
 
 
+def _requires_container_runtime(args: list[str]) -> bool:
+    executable = Path(args[0]).name.lower()
+    return executable in {"docker", "podman"}
+
+
 def _extract_markers(stdout: str) -> list[ContainerOutput]:
     outputs: list[ContainerOutput] = []
     cursor = 0
@@ -86,11 +92,6 @@ async def run_container_agent(
     on_output: Callable[[ContainerOutput], Awaitable[None]] | None = None,
     command: str | None = None,
 ) -> ContainerOutput:
-    try:
-        ensure_container_runtime_running(required=REQUIRE_CONTAINER_RUNTIME)
-    except RuntimeError as exc:
-        return ContainerOutput(status="error", result=None, error=str(exc))
-
     cmd = command or DEFAULT_AGENT_COMMAND
     try:
         args = shlex.split(cmd)
@@ -99,6 +100,12 @@ async def run_container_agent(
 
     if not args:
         return ContainerOutput(status="error", result=None, error="Agent command is empty")
+
+    if _requires_container_runtime(args):
+        try:
+            ensure_container_runtime_running(required=REQUIRE_CONTAINER_RUNTIME)
+        except RuntimeError as exc:
+            return ContainerOutput(status="error", result=None, error=str(exc))
 
     try:
         proc = await asyncio.create_subprocess_exec(

@@ -9,6 +9,7 @@ from nanoclaw.app import NanoClawApp, _resolve_channel_names, build_default_main
 from nanoclaw.channels.cli_stdio import CliStdioChannel
 from nanoclaw.channels.local_file import LocalFileChannel
 from nanoclaw.channels.registry import ChannelOpts
+from nanoclaw.container_runner import ContainerOutput
 from nanoclaw.db import NanoClawDB
 from nanoclaw.types import RegisteredGroup
 
@@ -19,8 +20,14 @@ def _now_iso() -> str:
 
 @pytest.mark.asyncio
 async def test_app_processes_local_and_cli_messages_in_one_poll_cycle(tmp_path) -> None:
+    async def fake_agent_runner(_group, _input_data, on_process=None, on_output=None, command=None):
+        output = ContainerOutput(status="success", result="Echo: stubbed response")
+        if on_output is not None:
+            await on_output(output)
+        return output
+
     db = NanoClawDB.in_memory()
-    app = NanoClawApp(db=db)
+    app = NanoClawApp(db=db, agent_runner=fake_agent_runner)
     app.load_state()
 
     main_jid, main_group = build_default_main_group()
@@ -77,12 +84,12 @@ async def test_app_processes_local_and_cli_messages_in_one_poll_cycle(tmp_path) 
 
     await app.run_once()
 
-    for _ in range(30):
+    for _ in range(10):
         local_outbound = list((tmp_path / "local" / "outbound").glob("*.json"))
         cli_lines = [line for line in cli_output.getvalue().splitlines() if line.strip()]
         if local_outbound and cli_lines:
             break
-        await asyncio.sleep(0.05)
+        await asyncio.sleep(0.02)
 
     local_outbound = list((tmp_path / "local" / "outbound").glob("*.json"))
     assert local_outbound, "expected local-file outbound response"
@@ -96,6 +103,8 @@ async def test_app_processes_local_and_cli_messages_in_one_poll_cycle(tmp_path) 
     cli_payload = json.loads(cli_lines[0])
     assert cli_payload["jid"] == "cli:main"
     assert cli_payload["text"].startswith("Echo:")
+
+    await app.shutdown()
 
 
 def test_resolve_channel_names_from_env(monkeypatch) -> None:
