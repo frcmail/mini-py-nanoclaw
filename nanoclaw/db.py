@@ -210,6 +210,20 @@ class NanoClawDB:
             for row in rows
         ]
 
+    def has_messages_since(self, chat_jid: str, since_timestamp: str, bot_prefix: str) -> bool:
+        row = self._conn.execute(
+            """
+            SELECT 1
+            FROM messages
+            WHERE chat_jid = ? AND timestamp > ?
+              AND is_bot_message = 0 AND content NOT LIKE ?
+              AND content != '' AND content IS NOT NULL
+            LIMIT 1
+            """,
+            (chat_jid, since_timestamp, f"{bot_prefix}:%"),
+        ).fetchone()
+        return row is not None
+
     def get_new_messages(
         self, jids: list[str], last_timestamp: str, bot_prefix: str, limit: int = 200
     ) -> tuple[list[NewMessage], str]:

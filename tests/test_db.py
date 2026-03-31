@@ -51,6 +51,39 @@ def test_store_and_get_messages_since() -> None:
     assert messages[0].id == "m1"
 
 
+def test_has_messages_since_true_for_user_message() -> None:
+    db = NanoClawDB.in_memory()
+    db.store_message(
+        NewMessage(
+            id="m1",
+            chat_jid="group@g.us",
+            sender="alice",
+            sender_name="Alice",
+            content="hello",
+            timestamp="2024-01-01T00:00:01.000Z",
+        )
+    )
+
+    assert db.has_messages_since("group@g.us", "", "Andy") is True
+
+
+def test_has_messages_since_false_for_bot_prefixed_message() -> None:
+    db = NanoClawDB.in_memory()
+    db.store_message(
+        NewMessage(
+            id="m1",
+            chat_jid="group@g.us",
+            sender="bot",
+            sender_name="Bot",
+            content="Andy: internal reply",
+            timestamp="2024-01-01T00:00:01.000Z",
+            is_bot_message=False,
+        )
+    )
+
+    assert db.has_messages_since("group@g.us", "", "Andy") is False
+
+
 def test_due_tasks() -> None:
     db = NanoClawDB.in_memory()
     db.create_task(make_task("t1", "2000-01-01T00:00:00.000Z"))
