@@ -20,6 +20,13 @@ from .registry import ChannelOpts, register_channel
 _MAX_PAYLOAD_BYTES = 1 * 1024 * 1024  # 1 MB
 
 
+def _normalize_token(token: str | None) -> str | None:
+    if token is None:
+        return None
+    stripped = token.strip()
+    return stripped or None
+
+
 class WebhookHttpChannel:
     """HTTP webhook channel that accepts inbound JSON and emits outbound messages."""
 
@@ -37,7 +44,7 @@ class WebhookHttpChannel:
         self._opts = opts
         self._host = host or os.getenv("NANOCLAW_WEBHOOK_HOST", "127.0.0.1")
         self._port = int(port if port is not None else os.getenv("NANOCLAW_WEBHOOK_PORT", "8787"))
-        self._token = token if token is not None else os.getenv("NANOCLAW_WEBHOOK_TOKEN")
+        self._token = _normalize_token(token if token is not None else os.getenv("NANOCLAW_WEBHOOK_TOKEN"))
         self._outbound_url = outbound_url if outbound_url is not None else os.getenv("NANOCLAW_WEBHOOK_OUTBOUND_URL")
         self._base_dir = base_dir or (DATA_DIR / "channels" / "webhook")
         self._outbound_dir = self._base_dir / "outbound"

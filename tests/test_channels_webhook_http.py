@@ -76,6 +76,24 @@ async def test_webhook_http_auth_and_inbound_validation(tmp_path) -> None:
         await channel.disconnect()
 
 
+@pytest.mark.asyncio
+async def test_webhook_http_rejects_whitespace_token(tmp_path) -> None:
+    channel = WebhookHttpChannel(
+        ChannelOpts(
+            on_message=lambda jid, msg: None,
+            on_chat_metadata=lambda jid, ts, name, ch, is_group: None,
+            registered_groups=lambda: {},
+        ),
+        host="127.0.0.1",
+        port=0,
+        token="   ",
+        base_dir=tmp_path,
+    )
+
+    with pytest.raises(ValueError, match="NANOCLAW_WEBHOOK_TOKEN is required"):
+        await channel.connect()
+
+
 class _OutboundSinkHandler(BaseHTTPRequestHandler):
     received_payloads = []
 
