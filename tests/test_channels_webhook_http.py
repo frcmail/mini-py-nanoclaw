@@ -9,6 +9,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
+import nanoclaw.channels.webhook_http as webhook_http_module
 from nanoclaw.channels.registry import ChannelOpts
 from nanoclaw.channels.webhook_http import WebhookHttpChannel
 
@@ -154,3 +155,31 @@ async def test_webhook_http_outbound_file_and_callback(tmp_path) -> None:
         sink_server.shutdown()
         sink_server.server_close()
         sink_thread.join(timeout=1)
+
+
+def test_webhook_http_logs_outbound_callback_failure(tmp_path, monkeypatch) -> None:
+    channel = WebhookHttpChannel(
+        ChannelOpts(
+            on_message=lambda jid, msg: None,
+            on_chat_metadata=lambda jid, ts, name, ch, is_group: None,
+            registered_groups=lambda: {},
+        ),
+        host="127.0.0.1",
+        port=0,
+        token="token",
+        outbound_url="http://127.0.0.1:9/callback",
+        base_dir=tmp_path,
+    )
+
+    warnings: list[str] = []
+
+    def _raise_url_error(*_args, **_kwargs):
+        raise urllib.error.URLError("connection refused")
+
+    monkeypatch.setattr(webhook_http_module.urllib.request, "urlopen", _raise_url_error)
+    monkeypatch.setattr(webhook_http_module.logger, "warning", lambda msg, *args: warnings.append(msg % args))
+
+    channel._post_outbound({"jid": "webhook:main", "text": "reply"})
+
+    assert len(warnings) == 1
+    assert "webhook outbound callback failed" in warnings[0]

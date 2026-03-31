@@ -98,7 +98,10 @@ class TaskScheduler:
 
     async def _loop(self) -> None:
         while not self._stopped:
-            await self.run_once()
+            try:
+                await self.run_once()
+            except Exception as exc:
+                logger.warning("task scheduler loop iteration failed: %s", exc)
             await asyncio.sleep(self._poll_interval_ms / 1000)
 
     async def _run_and_record(self, task: ScheduledTask) -> None:

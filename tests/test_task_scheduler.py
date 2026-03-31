@@ -1,5 +1,9 @@
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 
+import pytest
+
+import nanoclaw.task_scheduler as task_scheduler_module
 from nanoclaw.task_scheduler import compute_next_run
 from nanoclaw.types import ScheduledTask
 
@@ -45,3 +49,33 @@ def test_compute_next_run_skips_missed_intervals() -> None:
     assert next_run is not None
     got = datetime.fromisoformat(next_run.replace("Z", "+00:00"))
     assert got > datetime.now(timezone.utc)
+
+
+@pytest.mark.asyncio
+async def test_scheduler_loop_continues_after_run_once_error(monkeypatch) -> None:
+    scheduler = task_scheduler_module.TaskScheduler(
+        db=SimpleNamespace(),
+        queue=SimpleNamespace(),
+        registered_groups=lambda: {},
+        get_sessions=lambda: {},
+        run_task_fn=lambda task, sessions: None,
+        poll_interval_ms=1,
+    )
+
+    calls = {"count": 0}
+    warnings: list[str] = []
+
+    async def fake_run_once() -> None:
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise RuntimeError("boom")
+        scheduler._stopped = True
+
+    monkeypatch.setattr(scheduler, "run_once", fake_run_once)
+    monkeypatch.setattr(task_scheduler_module.logger, "warning", lambda msg, *args: warnings.append(msg % args))
+
+    await scheduler._loop()
+
+    assert calls["count"] == 2
+    assert len(warnings) == 1
+    assert "task scheduler loop iteration failed" in warnings[0]

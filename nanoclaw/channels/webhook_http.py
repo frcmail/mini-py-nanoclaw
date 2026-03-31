@@ -13,6 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from ..config import DATA_DIR
+from ..logger import logger
 from ..types import NewMessage
 from .common import atomic_write_json, ensure_dirs, utc_now_iso
 from .registry import ChannelOpts, register_channel
@@ -198,8 +199,8 @@ class WebhookHttpChannel:
         try:
             with urllib.request.urlopen(req, timeout=5) as resp:
                 _ = resp.read()
-        except Exception:
-            # Local-use channel: ignore outbound callback errors in v1.
+        except (urllib.error.URLError, OSError, ValueError) as exc:
+            logger.warning("webhook outbound callback failed url=%s error=%s", self._outbound_url, exc)
             return
 
 
