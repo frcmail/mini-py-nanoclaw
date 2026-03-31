@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Awaitable
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Literal, Optional, Protocol, Union
+from typing import Callable, Literal, Optional, Protocol, Union
 
 
 @dataclass

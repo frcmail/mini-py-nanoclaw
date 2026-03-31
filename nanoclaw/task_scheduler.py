@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable
 from datetime import datetime, timedelta, timezone
-from typing import Awaitable, Callable
+from typing import Callable
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from croniter import croniter
@@ -11,6 +12,7 @@ from .config import SCHEDULER_POLL_INTERVAL, TIMEZONE
 from .db import NanoClawDB
 from .group_folder import resolve_group_folder_path
 from .group_queue import GroupQueue
+from .logger import logger
 from .types import RegisteredGroup, ScheduledTask, TaskRunLog
 
 
@@ -28,6 +30,7 @@ def compute_next_run(task: ScheduledTask) -> str | None:
         try:
             tz = ZoneInfo(TIMEZONE)
         except ZoneInfoNotFoundError:
+            logger.warning("scheduler: unknown timezone %s, falling back to UTC", TIMEZONE)
             tz = timezone.utc
         base = now.astimezone(tz)
         next_dt = croniter(task.schedule_value, base).get_next(datetime)

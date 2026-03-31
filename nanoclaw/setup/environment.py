@@ -7,8 +7,7 @@ from .status import emit_status
 
 
 def run(_args: list[str]) -> None:
-    py = sys.version_info
-    py_ok = py.major > 3 or (py.major == 3 and py.minor >= 9)
+    py_ok = sys.version_info >= (3, 9)
     status = "success" if py_ok else "python_too_old"
 
     emit_status(

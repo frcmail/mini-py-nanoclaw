@@ -6,6 +6,7 @@ import uuid
 from pathlib import Path
 
 from ..config import DATA_DIR
+from ..logger import logger
 from ..types import NewMessage
 from .common import atomic_write_json, ensure_dirs, utc_now_iso
 from .registry import ChannelOpts, register_channel
@@ -55,6 +56,7 @@ class LocalFileChannel:
             try:
                 data = json.loads(file_path.read_text(encoding="utf-8"))
             except json.JSONDecodeError:
+                logger.warning("local-file: invalid JSON in %s", file_path.name)
                 file_path.unlink(missing_ok=True)
                 continue
 

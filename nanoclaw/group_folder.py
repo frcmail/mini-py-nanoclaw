@@ -18,9 +18,7 @@ def is_valid_group_folder(folder: str) -> bool:
         return False
     if "/" in folder or "\\" in folder or ".." in folder:
         return False
-    if folder.lower() in RESERVED_FOLDERS:
-        return False
-    return True
+    return folder.lower() not in RESERVED_FOLDERS
 
 
 def assert_valid_group_folder(folder: str) -> None:
@@ -35,16 +33,16 @@ def _ensure_within_base(base_dir: Path, resolved_path: Path) -> None:
         raise ValueError(f"Path escapes base directory: {resolved_path}") from exc
 
 
-def resolve_group_folder_path(folder: str) -> Path:
+def _resolve_path(base_dir: Path, folder: str) -> Path:
     assert_valid_group_folder(folder)
-    group_path = (GROUPS_DIR / folder).resolve()
-    _ensure_within_base(GROUPS_DIR.resolve(), group_path)
-    return group_path
+    resolved = (base_dir / folder).resolve()
+    _ensure_within_base(base_dir.resolve(), resolved)
+    return resolved
+
+
+def resolve_group_folder_path(folder: str) -> Path:
+    return _resolve_path(GROUPS_DIR, folder)
 
 
 def resolve_group_ipc_path(folder: str) -> Path:
-    assert_valid_group_folder(folder)
-    ipc_base = (DATA_DIR / "ipc").resolve()
-    ipc_path = (ipc_base / folder).resolve()
-    _ensure_within_base(ipc_base, ipc_path)
-    return ipc_path
+    return _resolve_path(DATA_DIR / "ipc", folder)

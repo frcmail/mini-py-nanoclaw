@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import asyncio
 from collections import deque
+from collections.abc import Awaitable
 from dataclasses import dataclass, field
-from typing import Awaitable, Callable
+from typing import Callable
 
 from .config import MAX_CONCURRENT_CONTAINERS
 
@@ -32,6 +33,7 @@ class GroupQueue:
         max_concurrent_containers: int = MAX_CONCURRENT_CONTAINERS,
         max_retries: int = 5,
         base_retry_ms: int = 5000,
+        max_retry_ms: int = 300000,
     ) -> None:
         self._groups: dict[str, GroupState] = {}
         self._active_count = 0
@@ -41,6 +43,7 @@ class GroupQueue:
         self._max_concurrent = max(1, max_concurrent_containers)
         self._max_retries = max_retries
         self._base_retry_ms = base_retry_ms
+        self._max_retry_ms = max_retry_ms
         self._close_stdin_fn: Callable[[str], None] | None = None
 
     def _get_group(self, group_jid: str) -> GroupState:
@@ -150,7 +153,10 @@ class GroupQueue:
             state.retry_count = 0
             return
 
-        delay_ms = self._base_retry_ms * (2 ** (state.retry_count - 1))
+        delay_ms = min(
+            self._base_retry_ms * (2 ** (state.retry_count - 1)),
+            self._max_retry_ms,
+        )
 
         async def _retry() -> None:
             await asyncio.sleep(delay_ms / 1000)

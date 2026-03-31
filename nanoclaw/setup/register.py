@@ -2,11 +2,10 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from .status import emit_status
-from ..config import ASSISTANT_NAME
-from ..config import DATA_DIR
+from ..config import ASSISTANT_NAME, DATA_DIR
 from ..db import NanoClawDB
 from ..types import RegisteredGroup
+from .status import emit_status
 
 
 def run(_args: list[str]) -> None:

@@ -5,6 +5,7 @@ import platform
 import re
 import socket
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 
 from .env import read_env_file
@@ -28,6 +29,8 @@ def _as_int(value: str | None, default: int) -> int:
 env_config = read_env_file(["ASSISTANT_NAME", "ASSISTANT_HAS_OWN_NUMBER"])
 
 ASSISTANT_NAME = os.getenv("ASSISTANT_NAME") or env_config.get("ASSISTANT_NAME") or "Andy"
+if not re.fullmatch(r"[A-Za-z0-9 _-]{1,64}", ASSISTANT_NAME):
+    ASSISTANT_NAME = "Andy"
 ASSISTANT_HAS_OWN_NUMBER = _as_bool(
     os.getenv("ASSISTANT_HAS_OWN_NUMBER") or env_config.get("ASSISTANT_HAS_OWN_NUMBER"),
     default=False,
@@ -67,10 +70,13 @@ REQUIRE_CONTAINER_RUNTIME = _as_bool(
     default=False,
 )
 
-TRIGGER_PATTERN = re.compile(rf"^@{re.escape(ASSISTANT_NAME)}\\b", re.IGNORECASE)
+TRIGGER_PATTERN = re.compile(
+    rf"^@{re.escape(ASSISTANT_NAME)}\b", re.IGNORECASE
+) if ASSISTANT_NAME else re.compile(r"(?!)")
 TIMEZONE = os.getenv("TZ") or str(datetime.now().astimezone().tzinfo or "UTC")
 
 
+@lru_cache(maxsize=1)
 def _detect_proxy_bind_host() -> str:
     env_override = os.getenv("CREDENTIAL_PROXY_HOST")
     if env_override:
@@ -89,7 +95,7 @@ def _detect_proxy_bind_host() -> str:
             _ = s.getsockname()[0]
     except OSError:
         pass
-    return "0.0.0.0"
+    return "0.0.0.0"  # noqa: S104
 
 
 PROXY_BIND_HOST = _detect_proxy_bind_host()

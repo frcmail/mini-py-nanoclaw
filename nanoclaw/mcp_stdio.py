@@ -34,68 +34,90 @@ def _read_json(path: Path, default):
         return default
 
 
+_TOOLS = [
+    {"name": "send_message", "description": "Send a message to the active chat"},
+    {"name": "schedule_task", "description": "Create a scheduled task"},
+    {"name": "list_tasks", "description": "List current tasks snapshot"},
+    {"name": "pause_task", "description": "Pause a task"},
+    {"name": "resume_task", "description": "Resume a task"},
+    {"name": "cancel_task", "description": "Cancel a task"},
+    {"name": "list_available_groups", "description": "List available groups snapshot"},
+]
+
+
 def _list_tools() -> list[dict]:
-    return [
-        {"name": "send_message", "description": "Send a message to the active chat"},
-        {"name": "schedule_task", "description": "Create a scheduled task"},
-        {"name": "list_tasks", "description": "List current tasks snapshot"},
-        {"name": "pause_task", "description": "Pause a task"},
-        {"name": "resume_task", "description": "Resume a task"},
-        {"name": "cancel_task", "description": "Cancel a task"},
-        {"name": "list_available_groups", "description": "List available groups snapshot"},
-    ]
+    return _TOOLS
+
+
+def _tool_send_message(arguments: dict) -> dict:
+    text = str(arguments.get("text") or "").strip()
+    if not text:
+        return {"isError": True, "content": [{"type": "text", "text": "text is required"}]}
+    _write_ipc_file(
+        MESSAGES_DIR,
+        {
+            "type": "message",
+            "chatJid": str(arguments.get("chatJid") or CHAT_JID),
+            "text": text,
+            "sender": arguments.get("sender"),
+            "groupFolder": GROUP_FOLDER,
+            "timestamp": time.time(),
+        },
+    )
+    return {"content": [{"type": "text", "text": "Message sent."}]}
+
+
+def _tool_schedule_task(arguments: dict) -> dict:
+    payload = {
+        "type": "schedule_task",
+        "taskId": arguments.get("taskId") or f"task-{uuid.uuid4().hex[:8]}",
+        "prompt": arguments.get("prompt"),
+        "schedule_type": arguments.get("schedule_type"),
+        "schedule_value": arguments.get("schedule_value"),
+        "context_mode": arguments.get("context_mode") or "group",
+        "targetJid": arguments.get("targetJid") or CHAT_JID,
+        "timestamp": time.time(),
+    }
+    _write_ipc_file(TASKS_DIR, payload)
+    return {"content": [{"type": "text", "text": f"Task {payload['taskId']} scheduled."}]}
+
+
+def _tool_task_mutation(name: str, arguments: dict) -> dict:
+    task_id = arguments.get("task_id")
+    if not task_id:
+        return {"isError": True, "content": [{"type": "text", "text": "task_id is required"}]}
+    _write_ipc_file(TASKS_DIR, {"type": name, "taskId": task_id, "timestamp": time.time()})
+    return {"content": [{"type": "text", "text": f"{name} requested for {task_id}."}]}
+
+
+def _tool_list_tasks(_arguments: dict) -> dict:
+    tasks = _read_json(IPC_DIR / "current_tasks.json", [])
+    if not IS_MAIN:
+        tasks = [task for task in tasks if task.get("groupFolder") == GROUP_FOLDER]
+    return {"content": [{"type": "text", "text": json.dumps(tasks, ensure_ascii=True)}]}
+
+
+def _tool_list_available_groups(_arguments: dict) -> dict:
+    payload = _read_json(IPC_DIR / "available_groups.json", {"groups": []})
+    return {"content": [{"type": "text", "text": json.dumps(payload, ensure_ascii=True)}]}
+
+
+_TOOL_DISPATCH: dict[str, object] = {
+    "send_message": _tool_send_message,
+    "schedule_task": _tool_schedule_task,
+    "pause_task": lambda args: _tool_task_mutation("pause_task", args),
+    "resume_task": lambda args: _tool_task_mutation("resume_task", args),
+    "cancel_task": lambda args: _tool_task_mutation("cancel_task", args),
+    "list_tasks": _tool_list_tasks,
+    "list_available_groups": _tool_list_available_groups,
+}
 
 
 def _call_tool(name: str, arguments: dict) -> dict:
-    if name == "send_message":
-        text = str(arguments.get("text") or "").strip()
-        if not text:
-            return {"isError": True, "content": [{"type": "text", "text": "text is required"}]}
-        _write_ipc_file(
-            MESSAGES_DIR,
-            {
-                "type": "message",
-                "chatJid": str(arguments.get("chatJid") or CHAT_JID),
-                "text": text,
-                "sender": arguments.get("sender"),
-                "groupFolder": GROUP_FOLDER,
-                "timestamp": time.time(),
-            },
-        )
-        return {"content": [{"type": "text", "text": "Message sent."}]}
-
-    if name == "schedule_task":
-        payload = {
-            "type": "schedule_task",
-            "taskId": arguments.get("taskId") or f"task-{uuid.uuid4().hex[:8]}",
-            "prompt": arguments.get("prompt"),
-            "schedule_type": arguments.get("schedule_type"),
-            "schedule_value": arguments.get("schedule_value"),
-            "context_mode": arguments.get("context_mode") or "group",
-            "targetJid": arguments.get("targetJid") or CHAT_JID,
-            "timestamp": time.time(),
-        }
-        _write_ipc_file(TASKS_DIR, payload)
-        return {"content": [{"type": "text", "text": f"Task {payload['taskId']} scheduled."}]}
-
-    if name in {"pause_task", "resume_task", "cancel_task"}:
-        task_id = arguments.get("task_id")
-        if not task_id:
-            return {"isError": True, "content": [{"type": "text", "text": "task_id is required"}]}
-        _write_ipc_file(TASKS_DIR, {"type": name, "taskId": task_id, "timestamp": time.time()})
-        return {"content": [{"type": "text", "text": f"{name} requested for {task_id}."}]}
-
-    if name == "list_tasks":
-        tasks = _read_json(IPC_DIR / "current_tasks.json", [])
-        if not IS_MAIN:
-            tasks = [task for task in tasks if task.get("groupFolder") == GROUP_FOLDER]
-        return {"content": [{"type": "text", "text": json.dumps(tasks, ensure_ascii=True)}]}
-
-    if name == "list_available_groups":
-        payload = _read_json(IPC_DIR / "available_groups.json", {"groups": []})
-        return {"content": [{"type": "text", "text": json.dumps(payload, ensure_ascii=True)}]}
-
-    return {"isError": True, "content": [{"type": "text", "text": f"unknown tool: {name}"}]}
+    handler = _TOOL_DISPATCH.get(name)
+    if handler is None:
+        return {"isError": True, "content": [{"type": "text", "text": f"unknown tool: {name}"}]}
+    return handler(arguments)
 
 
 def main() -> int:
@@ -106,6 +128,7 @@ def main() -> int:
         try:
             req = json.loads(line)
         except json.JSONDecodeError:
+            sys.stderr.write("mcp: invalid JSON-RPC input\n")
             continue
 
         method = req.get("method")

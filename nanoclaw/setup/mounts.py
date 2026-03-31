@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import json
 
-from .status import emit_status
 from ..config import MOUNT_ALLOWLIST_PATH
-
+from .status import emit_status
 
 DEFAULT_ALLOWLIST = {
     "allowedRoots": [

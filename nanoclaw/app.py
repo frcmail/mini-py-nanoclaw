@@ -3,9 +3,10 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import time
 import uuid
 from datetime import datetime, timezone
-from typing import Callable, Optional
+from typing import Callable
 
 from .config import (
     ASSISTANT_NAME,
@@ -48,8 +49,8 @@ class NanoClawApp:
 
     def __init__(
         self,
-        db: Optional[NanoClawDB] = None,
-        queue: Optional[GroupQueue] = None,
+        db: NanoClawDB | None = None,
+        queue: GroupQueue | None = None,
         agent_runner: Callable = run_container_agent,
     ) -> None:
         self.db = db or NanoClawDB()
@@ -65,6 +66,8 @@ class NanoClawApp:
         self._scheduler: TaskScheduler | None = None
         self._ipc_watcher: IpcWatcher | None = None
         self._credential_proxy: CredentialProxyServer | None = None
+        self._last_snapshot_time: float = 0.0
+        self._snapshot_interval: float = 2.0  # seconds
 
         self.queue.set_process_messages_fn(self.process_group_messages)
         self.queue.set_close_stdin_fn(self._close_group_stdin)
@@ -90,9 +93,13 @@ class NanoClawApp:
         group_dir = resolve_group_folder_path(group.folder)
         (group_dir / "logs").mkdir(parents=True, exist_ok=True)
 
-    async def setup_channels(self, channel_names: Optional[list[str]] = None) -> None:
+    async def setup_channels(self, channel_names: list[str] | None = None) -> None:
         from . import channels as _channels  # noqa: F401
-        from .channels.registry import ChannelOpts, get_channel_factory, get_registered_channel_names
+        from .channels.registry import (
+            ChannelOpts,
+            get_channel_factory,
+            get_registered_channel_names,
+        )
 
         _ = _channels
         self.channels = []
@@ -163,9 +170,9 @@ class NanoClawApp:
         self,
         chat_jid: str,
         timestamp: str,
-        name: Optional[str] = None,
-        channel: Optional[str] = None,
-        is_group: Optional[bool] = None,
+        name: str | None = None,
+        channel: str | None = None,
+        is_group: bool | None = None,
     ) -> None:
         self.db.store_chat_metadata(chat_jid, timestamp, name, channel, is_group)
 
@@ -182,7 +189,7 @@ class NanoClawApp:
         self.queue.enqueue_message_check(chat_jid)
 
     def recover_pending_messages(self) -> None:
-        for jid in self.registered_groups.keys():
+        for jid in self.registered_groups:
             since = self.last_agent_timestamp.get(jid, "")
             pending = self.db.get_messages_since(jid, since, ASSISTANT_NAME)
             if pending:
@@ -270,32 +277,33 @@ class NanoClawApp:
 
         prompt = format_messages(messages, TIMEZONE)
 
-        previous_cursor = self.last_agent_timestamp.get(chat_jid, "")
-        self.last_agent_timestamp[chat_jid] = messages[-1].timestamp
-        self.save_state()
+        self.last_agent_timestamp.get(chat_jid, "")
 
         output_sent = False
         had_error = False
 
-        # Snapshot tasks/groups for this group before running.
-        tasks = self.db.get_all_tasks()
-        write_tasks_snapshot(
-            group.folder,
-            is_main,
-            [
-                {
-                    "id": t.id,
-                    "groupFolder": t.group_folder,
-                    "prompt": t.prompt,
-                    "schedule_type": t.schedule_type,
-                    "schedule_value": t.schedule_value,
-                    "status": t.status,
-                    "next_run": t.next_run,
-                }
-                for t in tasks
-            ],
-        )
-        write_groups_snapshot(group.folder, is_main, self.get_available_groups(), set(self.registered_groups.keys()))
+        # Snapshot tasks/groups for this group before running (throttled).
+        now = time.monotonic()
+        if now - self._last_snapshot_time >= self._snapshot_interval:
+            self._last_snapshot_time = now
+            tasks = self.db.get_all_tasks()
+            write_tasks_snapshot(
+                group.folder,
+                is_main,
+                [
+                    {
+                        "id": t.id,
+                        "groupFolder": t.group_folder,
+                        "prompt": t.prompt,
+                        "schedule_type": t.schedule_type,
+                        "schedule_value": t.schedule_value,
+                        "status": t.status,
+                        "next_run": t.next_run,
+                    }
+                    for t in tasks
+                ],
+            )
+            write_groups_snapshot(group.folder, is_main, self.get_available_groups(), set(self.registered_groups.keys()))
 
         async def _on_output(output: ContainerOutput) -> None:
             nonlocal output_sent, had_error
@@ -323,11 +331,11 @@ class NanoClawApp:
         )
 
         if result.status == "error" or had_error:
-            if output_sent:
-                return True
-            self.last_agent_timestamp[chat_jid] = previous_cursor
-            self.save_state()
-            return False
+            return bool(output_sent)
+
+        # Commit cursor only after successful execution.
+        self.last_agent_timestamp[chat_jid] = messages[-1].timestamp
+        self.save_state()
 
         if result.new_session_id:
             self.sessions[group.folder] = result.new_session_id

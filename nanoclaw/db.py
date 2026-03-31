@@ -9,7 +9,19 @@ from typing import Any
 
 from .config import ASSISTANT_NAME, DATA_DIR, STORE_DIR
 from .group_folder import is_valid_group_folder
-from .types import AdditionalMount, ContainerConfig, NewMessage, RegisteredGroup, ScheduledTask, TaskRunLog
+from .types import (
+    AdditionalMount,
+    ContainerConfig,
+    NewMessage,
+    RegisteredGroup,
+    ScheduledTask,
+    TaskRunLog,
+)
+
+_TASK_UPDATE_COLUMNS = frozenset({
+    "group_folder", "chat_jid", "prompt", "schedule_type", "schedule_value",
+    "context_mode", "next_run", "last_run", "last_result", "status", "created_at",
+})
 
 
 class NanoClawDB:
@@ -21,7 +33,7 @@ class NanoClawDB:
         self._create_schema()
 
     @classmethod
-    def in_memory(cls) -> "NanoClawDB":
+    def in_memory(cls) -> NanoClawDB:
         obj = cls.__new__(cls)
         obj._conn = sqlite3.connect(":memory:")
         obj._conn.row_factory = sqlite3.Row
@@ -284,6 +296,9 @@ class NanoClawDB:
     def update_task(self, task_id: str, **updates: Any) -> None:
         if not updates:
             return
+        invalid_cols = set(updates.keys()) - _TASK_UPDATE_COLUMNS
+        if invalid_cols:
+            raise ValueError(f"Invalid column(s) for task update: {invalid_cols}")
         assignments = []
         values: list[Any] = []
         for key, value in updates.items():

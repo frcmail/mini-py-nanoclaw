@@ -8,10 +8,9 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
-OUTPUT_START_MARKER = "---NANOCLAW_OUTPUT_START---"
-OUTPUT_END_MARKER = "---NANOCLAW_OUTPUT_END---"
+from nanoclaw.constants import OUTPUT_END_MARKER, OUTPUT_START_MARKER
+
 IPC_POLL_MS = 0.5
 IPC_INPUT_DIR = Path("/workspace/ipc/input")
 IPC_CLOSE_SENTINEL = IPC_INPUT_DIR / "_close"
@@ -21,12 +20,12 @@ ENABLE_IPC_LOOP = os.getenv("NANOCLAW_AGENT_ENABLE_IPC_LOOP", "0") == "1"
 @dataclass
 class ContainerInput:
     prompt: str
-    sessionId: Optional[str]
+    sessionId: str | None
     groupFolder: str
     chatJid: str
     isMain: bool
     isScheduledTask: bool = False
-    assistantName: Optional[str] = None
+    assistantName: str | None = None
 
 
 def _write_output(payload: dict) -> None:
@@ -50,7 +49,7 @@ def _read_input() -> ContainerInput:
     )
 
 
-def _run_claude(prompt: str, session_id: Optional[str], cwd: Path) -> tuple[str, Optional[str], Optional[str]]:
+def _run_claude(prompt: str, session_id: str | None, cwd: Path) -> tuple[str, str | None, str | None]:
     claude_bin = shutil.which("claude")
     if not claude_bin:
         return f"Echo: {prompt[:400]}", session_id, None

@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import asyncio
+import hmac
 import json
 import os
 import queue
 import threading
 import time
-import uuid
 import urllib.request
+import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -15,6 +16,8 @@ from ..config import DATA_DIR
 from ..types import NewMessage
 from .common import atomic_write_json, ensure_dirs, utc_now_iso
 from .registry import ChannelOpts, register_channel
+
+_MAX_PAYLOAD_BYTES = 1 * 1024 * 1024  # 1 MB
 
 
 class WebhookHttpChannel:
@@ -42,7 +45,7 @@ class WebhookHttpChannel:
         self._connected = False
         self._server: ThreadingHTTPServer | None = None
         self._server_thread: threading.Thread | None = None
-        self._queue: "queue.Queue[dict]" = queue.Queue()
+        self._queue: queue.Queue[dict] = queue.Queue()
         self._filename_seq = 0
         self._filename_lock = threading.Lock()
 
@@ -135,7 +138,8 @@ class WebhookHttpChannel:
                     return
 
                 auth = self.headers.get("Authorization", "")
-                if auth != f"Bearer {channel._token}":
+                expected = f"Bearer {channel._token}"
+                if not hmac.compare_digest(auth.encode(), expected.encode()):
                     _write_json(self, 401, {"error": "unauthorized"})
                     return
 
@@ -143,6 +147,10 @@ class WebhookHttpChannel:
                     content_length = int(self.headers.get("Content-Length", "0"))
                 except ValueError:
                     _write_json(self, 400, {"error": "invalid_content_length"})
+                    return
+
+                if content_length < 0 or content_length > _MAX_PAYLOAD_BYTES:
+                    _write_json(self, 413, {"error": "payload_too_large"})
                     return
 
                 try:

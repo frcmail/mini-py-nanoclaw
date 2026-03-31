@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from importlib.resources import files
 
-from .status import emit_status
 from ..config import GROUPS_DIR
-
+from .status import emit_status
 
 DEFAULT_MAIN = "# Main group memory\n"
 DEFAULT_GLOBAL = "# Global shared memory\n"

@@ -4,8 +4,7 @@ import json
 import re
 import sys
 
-OUTPUT_START_MARKER = "---NANOCLAW_OUTPUT_START---"
-OUTPUT_END_MARKER = "---NANOCLAW_OUTPUT_END---"
+from nanoclaw.constants import OUTPUT_END_MARKER, OUTPUT_START_MARKER
 
 
 def _strip_tags(text: str) -> str:

@@ -29,7 +29,7 @@ class CliStdioChannel:
         self._output_stream = output_stream or sys.stdout
         self._connected = False
         self._stop_event = threading.Event()
-        self._queue: "queue.Queue[str]" = queue.Queue()
+        self._queue: queue.Queue[str] = queue.Queue()
         self._reader_thread: threading.Thread | None = None
 
     async def connect(self) -> None:
@@ -41,6 +41,8 @@ class CliStdioChannel:
     async def disconnect(self) -> None:
         self._connected = False
         self._stop_event.set()
+        if self._reader_thread is not None:
+            self._reader_thread.join(timeout=2)
 
     def is_connected(self) -> bool:
         return self._connected

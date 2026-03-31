@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import subprocess
+import threading
+import time
 
 from .config import CONTAINER_RUNTIME_BIN
 from .logger import logger
 
-
 _OPTIONAL_RUNTIME_WARNING_EMITTED = False
+_runtime_check_lock = threading.Lock()
+_runtime_check_result: bool | None = None
+_runtime_check_time: float = 0.0
+_RUNTIME_CHECK_TTL = 30.0  # seconds
 
 
 def _runtime_error_message(exc: Exception) -> str:
@@ -14,7 +19,16 @@ def _runtime_error_message(exc: Exception) -> str:
 
 
 def ensure_container_runtime_running(required: bool = True) -> bool:
-    global _OPTIONAL_RUNTIME_WARNING_EMITTED
+    global _OPTIONAL_RUNTIME_WARNING_EMITTED, _runtime_check_result, _runtime_check_time
+
+    with _runtime_check_lock:
+        now = time.monotonic()
+        if _runtime_check_result is not None and (now - _runtime_check_time) < _RUNTIME_CHECK_TTL:
+            if _runtime_check_result:
+                return True
+            # Cached failure: still need to handle required vs optional below.
+            if not required and _OPTIONAL_RUNTIME_WARNING_EMITTED:
+                return False
 
     try:
         subprocess.run(
@@ -24,8 +38,14 @@ def ensure_container_runtime_running(required: bool = True) -> bool:
             text=True,
             timeout=10,
         )
+        with _runtime_check_lock:
+            _runtime_check_result = True
+            _runtime_check_time = time.monotonic()
         return True
-    except Exception as exc:
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError, OSError) as exc:
+        with _runtime_check_lock:
+            _runtime_check_result = False
+            _runtime_check_time = time.monotonic()
         msg = _runtime_error_message(exc)
         if required:
             logger.error(msg)
@@ -61,7 +81,8 @@ def cleanup_orphans() -> None:
                 text=True,
                 timeout=15,
             )
-        except Exception:
+        except Exception as exc:
+            logger.debug("failed to stop orphan container %s: %s", name, exc)
             continue
 
     if names:

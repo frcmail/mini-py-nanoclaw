@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from .status import emit_status
 from ..config import DATA_DIR, GROUPS_DIR, STORE_DIR
+from .status import emit_status
 
 
 def run(_args: list[str]) -> None:

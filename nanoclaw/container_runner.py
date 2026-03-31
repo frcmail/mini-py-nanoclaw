@@ -6,17 +6,17 @@ import os
 import shlex
 import sys
 import uuid
+from collections.abc import Awaitable
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Optional
+from typing import Callable
 
 from .config import CONTAINER_TIMEOUT, REQUIRE_CONTAINER_RUNTIME
+from .constants import OUTPUT_END_MARKER, OUTPUT_START_MARKER
 from .container_runtime import ensure_container_runtime_running
 from .group_folder import resolve_group_ipc_path
 from .mount_security import validate_additional_mounts
 from .types import RegisteredGroup
 
-OUTPUT_START_MARKER = "---NANOCLAW_OUTPUT_START---"
-OUTPUT_END_MARKER = "---NANOCLAW_OUTPUT_END---"
 DEFAULT_AGENT_COMMAND = os.getenv(
     "NANOCLAW_AGENT_COMMAND",
     f"{sys.executable} -m nanoclaw.agent_runner",
@@ -29,17 +29,17 @@ class ContainerInput:
     group_folder: str
     chat_jid: str
     is_main: bool
-    session_id: Optional[str] = None
+    session_id: str | None = None
     is_scheduled_task: bool = False
-    assistant_name: Optional[str] = None
+    assistant_name: str | None = None
 
 
 @dataclass
 class ContainerOutput:
     status: str
-    result: Optional[str]
-    new_session_id: Optional[str] = None
-    error: Optional[str] = None
+    result: str | None
+    new_session_id: str | None = None
+    error: str | None = None
 
 
 @dataclass
@@ -82,9 +82,9 @@ def _extract_markers(stdout: str) -> list[ContainerOutput]:
 async def run_container_agent(
     group: RegisteredGroup,
     input_data: ContainerInput,
-    on_process: Optional[Callable[[asyncio.subprocess.Process, str], None]] = None,
-    on_output: Optional[Callable[[ContainerOutput], Awaitable[None]]] = None,
-    command: Optional[str] = None,
+    on_process: Callable[[asyncio.subprocess.Process, str], None] | None = None,
+    on_output: Callable[[ContainerOutput], Awaitable[None]] | None = None,
+    command: str | None = None,
 ) -> ContainerOutput:
     try:
         ensure_container_runtime_running(required=REQUIRE_CONTAINER_RUNTIME)
@@ -157,7 +157,7 @@ async def run_container_agent(
         return ContainerOutput(
             status="error",
             result=None,
-            error=f"Container exited with code {proc.returncode}: {stderr.decode('utf-8', errors='ignore')[-200:]}",
+            error=f"Container exited with code {proc.returncode}: {stderr.decode('utf-8', errors='ignore')[-2000:]}",
         )
 
     if outputs:

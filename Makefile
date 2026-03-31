@@ -8,6 +8,13 @@ install-dev:
 lint:
 	$(PYTHON) -m ruff check nanoclaw tests
 
+format:
+	$(PYTHON) -m ruff format nanoclaw tests
+	$(PYTHON) -m ruff check --fix nanoclaw tests
+
+format-check:
+	$(PYTHON) -m ruff format --check nanoclaw tests
+
 test:
 	$(PYTHON) -m pytest
 

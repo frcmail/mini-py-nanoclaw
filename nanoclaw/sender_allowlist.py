@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+import contextlib
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Union
 
 from .config import SENDER_ALLOWLIST_PATH
 from .logger import logger
 
-AllowType = Union[str, List[str]]
+AllowType = Union[str, list[str]]
+
+_allowlist_cache: SenderAllowlistConfig | None = None
+_allowlist_mtime: float = 0.0
 
 
 @dataclass
@@ -20,7 +24,7 @@ class ChatAllowlistEntry:
 @dataclass
 class SenderAllowlistConfig:
     default: ChatAllowlistEntry = field(default_factory=lambda: ChatAllowlistEntry(allow="*", mode="trigger"))
-    chats: Dict[str, ChatAllowlistEntry] = field(default_factory=dict)
+    chats: dict[str, ChatAllowlistEntry] = field(default_factory=dict)
     log_denied: bool = True
 
 
@@ -38,7 +42,27 @@ def _is_valid_entry(value: object) -> bool:
 
 
 def load_sender_allowlist(path_override: str | Path | None = None) -> SenderAllowlistConfig:
+    global _allowlist_cache, _allowlist_mtime
     file_path = Path(path_override) if path_override else SENDER_ALLOWLIST_PATH
+
+    # Use cached result if file hasn't changed.
+    if _allowlist_cache is not None and path_override is None:
+        try:
+            current_mtime = file_path.stat().st_mtime
+            if current_mtime == _allowlist_mtime:
+                return _allowlist_cache
+        except OSError:
+            return _allowlist_cache
+
+    result = _load_sender_allowlist_uncached(file_path)
+    if path_override is None:
+        _allowlist_cache = result
+        with contextlib.suppress(OSError):
+            _allowlist_mtime = file_path.stat().st_mtime
+    return result
+
+
+def _load_sender_allowlist_uncached(file_path: Path) -> SenderAllowlistConfig:
 
     try:
         raw = file_path.read_text(encoding="utf-8")
@@ -59,7 +83,7 @@ def load_sender_allowlist(path_override: str | Path | None = None) -> SenderAllo
         return SenderAllowlistConfig()
 
     default = ChatAllowlistEntry(allow=parsed["default"]["allow"], mode=parsed["default"]["mode"])
-    chats: Dict[str, ChatAllowlistEntry] = {}
+    chats: dict[str, ChatAllowlistEntry] = {}
 
     raw_chats = parsed.get("chats")
     if isinstance(raw_chats, dict):

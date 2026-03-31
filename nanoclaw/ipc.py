@@ -3,16 +3,18 @@ from __future__ import annotations
 import asyncio
 import json
 import uuid
+from collections.abc import Awaitable
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Awaitable, Callable
+from typing import Callable
 
 from croniter import croniter
 
 from .config import DATA_DIR, IPC_POLL_INTERVAL
 from .container_runner import AvailableGroup, write_groups_snapshot
 from .db import NanoClawDB
+from .logger import logger
 from .types import RegisteredGroup, ScheduledTask
 
 
@@ -98,6 +100,10 @@ class IpcWatcher:
                 target = groups.get(chat_jid)
                 if is_main or (target and target.folder == source_group):
                     await self._deps.send_message(chat_jid, text)
+            except json.JSONDecodeError:
+                logger.warning("ipc: invalid JSON in %s", file_path.name)
+            except Exception as exc:
+                logger.warning("ipc: error processing message %s: %s", file_path.name, exc)
             finally:
                 file_path.unlink(missing_ok=True)
 
@@ -115,6 +121,10 @@ class IpcWatcher:
             try:
                 data = json.loads(file_path.read_text(encoding="utf-8"))
                 await self._process_task_payload(data, source_group, groups, is_main)
+            except json.JSONDecodeError:
+                logger.warning("ipc: invalid task JSON in %s", file_path.name)
+            except Exception as exc:
+                logger.warning("ipc: error processing task %s: %s", file_path.name, exc)
             finally:
                 file_path.unlink(missing_ok=True)
 
@@ -129,41 +139,60 @@ class IpcWatcher:
         task_id = data.get("taskId")
 
         if payload_type == "schedule_task":
-            target_jid = data.get("targetJid")
-            prompt = data.get("prompt")
-            schedule_type = data.get("schedule_type")
-            schedule_value = data.get("schedule_value")
-            if not all(isinstance(v, str) for v in [target_jid, prompt, schedule_type, schedule_value]):
-                return
-
-            target_group = groups.get(target_jid)
-            if target_group is None:
-                return
-            if not is_main and target_group.folder != source_group:
-                return
-
-            next_run = _compute_first_run(schedule_type, schedule_value)
-            if next_run is None:
-                return
-
-            new_id = task_id if isinstance(task_id, str) else f"task-{uuid.uuid4().hex[:8]}"
-            task = ScheduledTask(
-                id=new_id,
-                group_folder=target_group.folder,
-                chat_jid=target_jid,
-                prompt=prompt,
-                schedule_type=schedule_type,
-                schedule_value=schedule_value,
-                context_mode="group" if data.get("context_mode") == "group" else "isolated",
-                next_run=next_run,
-                last_run=None,
-                last_result=None,
-                status="active",
-                created_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-            )
-            self._deps.db.create_task(task)
+            self._handle_schedule_task(data, source_group, groups, is_main)
             return
 
+        self._handle_task_mutation(payload_type, task_id, source_group, is_main)
+
+    def _handle_schedule_task(
+        self,
+        data: dict,
+        source_group: str,
+        groups: dict[str, RegisteredGroup],
+        is_main: bool,
+    ) -> None:
+        target_jid = data.get("targetJid")
+        prompt = data.get("prompt")
+        schedule_type = data.get("schedule_type")
+        schedule_value = data.get("schedule_value")
+        if not all(isinstance(v, str) for v in [target_jid, prompt, schedule_type, schedule_value]):
+            return
+
+        target_group = groups.get(target_jid)
+        if target_group is None:
+            return
+        if not is_main and target_group.folder != source_group:
+            return
+
+        next_run = _compute_first_run(schedule_type, schedule_value)
+        if next_run is None:
+            return
+
+        task_id = data.get("taskId")
+        new_id = task_id if isinstance(task_id, str) else f"task-{uuid.uuid4().hex[:8]}"
+        task = ScheduledTask(
+            id=new_id,
+            group_folder=target_group.folder,
+            chat_jid=target_jid,
+            prompt=prompt,
+            schedule_type=schedule_type,
+            schedule_value=schedule_value,
+            context_mode="group" if data.get("context_mode") == "group" else "isolated",
+            next_run=next_run,
+            last_run=None,
+            last_result=None,
+            status="active",
+            created_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        )
+        self._deps.db.create_task(task)
+
+    def _handle_task_mutation(
+        self,
+        payload_type: str | None,
+        task_id: str | None,
+        source_group: str,
+        is_main: bool,
+    ) -> None:
         if not isinstance(task_id, str):
             return
 

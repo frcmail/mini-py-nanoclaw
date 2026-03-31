@@ -5,7 +5,6 @@ import os
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional
 
 from .config import MOUNT_ALLOWLIST_PATH
 from .logger import logger
@@ -16,7 +15,7 @@ from .types import AdditionalMount
 class AllowedRoot:
     path: str
     allowReadWrite: bool
-    description: Optional[str] = None
+    description: str | None = None
 
 
 @dataclass
@@ -144,9 +143,12 @@ def validate_additional_mounts(mounts: list[AdditionalMount], group_name: str, i
             continue
 
         requested_rw = mount.readonly is False
-        readonly = True
-        if requested_rw and not (not is_main and allowlist.nonMainReadOnly) and allowed_root.allowReadWrite:
-            readonly = False
+        can_write = (
+            requested_rw
+            and allowed_root.allowReadWrite
+            and (is_main or not allowlist.nonMainReadOnly)
+        )
+        readonly = not can_write
 
         validated.append(
             {

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import os
 import threading
 import urllib.parse
 import urllib.request
-import os
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -48,21 +48,37 @@ def start_credential_proxy(port: int, host: str = PROXY_BIND_HOST) -> Credential
         def log_message(self, _format: str, *_args) -> None:
             return
 
+        _ALLOWED_HEADERS = {
+            "content-type", "accept", "anthropic-version",
+            "x-request-id", "user-agent", "content-length",
+        }
+
         def _proxy(self) -> None:
-            body = self.rfile.read(int(self.headers.get("Content-Length", "0") or "0"))
+            try:
+                cl = int(self.headers.get("Content-Length", "0") or "0")
+            except ValueError:
+                self.send_response(400)
+                self.end_headers()
+                return
+            if cl < 0:
+                self.send_response(400)
+                self.end_headers()
+                return
+            body = self.rfile.read(cl)
             upstream = upstream_base.rstrip("/") + self.path
 
-            headers = {k: v for k, v in self.headers.items()}
+            headers: dict[str, str] = {}
+            for k, v in self.headers.items():
+                if k.lower() in self._ALLOWED_HEADERS:
+                    headers[k] = v
             headers["Host"] = urllib.parse.urlparse(upstream).netloc
-            headers.pop("Connection", None)
-            headers.pop("Keep-Alive", None)
-            headers.pop("Transfer-Encoding", None)
 
             if auth_mode == "api-key":
-                headers.pop("x-api-key", None)
                 headers["x-api-key"] = api_key or ""
-            elif "Authorization" in headers and oauth_token:
+            elif oauth_token:
                 headers["Authorization"] = f"Bearer {oauth_token}"
+            elif "Authorization" in self.headers:
+                headers["Authorization"] = self.headers["Authorization"]
 
             request = urllib.request.Request(
                 upstream,
