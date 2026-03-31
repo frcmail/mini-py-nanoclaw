@@ -189,3 +189,55 @@ def test_proxy_filters_disallowed_headers(monkeypatch):
         upstream.shutdown()
         upstream.server_close()
         thread.join(timeout=1)
+
+
+def test_proxy_rejects_oversized_upstream_response(monkeypatch):
+    """Proxy returns 502 when upstream response exceeds 10MB limit."""
+
+    class _LargeHandler(BaseHTTPRequestHandler):
+        def log_message(self, _format, *_args):
+            return
+
+        def do_POST(self):
+            # Send a response body larger than 10MB
+            body = b"X" * (10 * 1024 * 1024 + 100)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/octet-stream")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+    upstream = ThreadingHTTPServer(("127.0.0.1", 0), _LargeHandler)
+    thread = threading.Thread(target=upstream.serve_forever, daemon=True)
+    thread.start()
+    upstream_port = upstream.server_address[1]
+
+    monkeypatch.setattr(
+        credential_proxy,
+        "read_env_file",
+        lambda _keys: {
+            "ANTHROPIC_API_KEY": "key",
+            "ANTHROPIC_BASE_URL": f"http://127.0.0.1:{upstream_port}",
+        },
+    )
+
+    proxy = credential_proxy.start_credential_proxy(0, "127.0.0.1")
+    proxy_port = proxy.server.server_address[1]
+
+    try:
+        req = urllib.request.Request(
+            f"http://127.0.0.1:{proxy_port}/v1/messages",
+            data=b"{}",
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                assert resp.status == 502
+        except urllib.error.HTTPError as exc:
+            assert exc.code == 502
+    finally:
+        proxy.close()
+        upstream.shutdown()
+        upstream.server_close()
+        thread.join(timeout=1)

@@ -125,7 +125,7 @@ def test_write_groups_snapshot_writes_empty_for_non_main(monkeypatch, tmp_path: 
         )
     ]
 
-    write_groups_snapshot("grp1", is_main=False, groups=groups, _registered_jids={"g1"})
+    write_groups_snapshot("grp1", is_main=False, groups=groups)
 
     payload = json.loads((tmp_path / "ipc" / "grp1" / "available_groups.json").read_text(encoding="utf-8"))
     assert payload == {"groups": []}
@@ -149,7 +149,7 @@ def test_write_groups_snapshot_writes_visible_groups_for_main(monkeypatch, tmp_p
         ),
     ]
 
-    write_groups_snapshot("main", is_main=True, groups=groups, _registered_jids={"g1"})
+    write_groups_snapshot("main", is_main=True, groups=groups)
 
     payload = json.loads((tmp_path / "ipc" / "main" / "available_groups.json").read_text(encoding="utf-8"))
     assert payload["groups"][0]["jid"] == "g1"

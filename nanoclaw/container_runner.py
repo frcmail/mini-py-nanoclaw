@@ -221,7 +221,6 @@ def write_groups_snapshot(
     group_folder: str,
     is_main: bool,
     groups: list[AvailableGroup],
-    _registered_jids: set[str],
 ) -> None:
     group_ipc_dir = resolve_group_ipc_path(group_folder)
     group_ipc_dir.mkdir(parents=True, exist_ok=True)

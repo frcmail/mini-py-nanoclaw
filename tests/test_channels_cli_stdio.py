@@ -43,3 +43,33 @@ async def test_cli_stdio_inbound_parse_and_outbound_print() -> None:
     assert payload["type"] == "outbound"
     assert payload["jid"] == "cli:main"
     assert payload["text"] == "reply"
+
+
+@pytest.mark.asyncio
+async def test_cli_stdio_read_loop_handles_oserror() -> None:
+    """Reader thread survives and exits cleanly when stdin raises OSError."""
+
+    class BrokenStream:
+        def readline(self):
+            raise OSError("broken pipe")
+
+    outgoing = io.StringIO()
+    received = []
+
+    channel = CliStdioChannel(
+        ChannelOpts(
+            on_message=lambda jid, msg: received.append((jid, msg.content)),
+            on_chat_metadata=lambda jid, ts, name, ch, is_group: None,
+            registered_groups=lambda: {},
+        ),
+        input_stream=BrokenStream(),
+        output_stream=outgoing,
+    )
+
+    await channel.connect()
+    await asyncio.sleep(0.1)
+    await channel.poll()
+
+    # No messages received, channel didn't crash
+    assert received == []
+    await channel.disconnect()

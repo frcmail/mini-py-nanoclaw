@@ -529,3 +529,26 @@ def test_close_group_stdin_skips_unregistered(monkeypatch) -> None:
     app = NanoClawApp(db=NanoClawDB.in_memory())
     app._close_group_stdin("unknown@jid")
     assert closed == []
+
+
+def test_save_state_prunes_stale_groups() -> None:
+    """save_state removes entries for groups no longer in registered_groups."""
+    db = NanoClawDB.in_memory()
+    app = NanoClawApp(db=db)
+    jid, group = build_default_main_group()
+    app.register_group(jid, group)
+
+    # Simulate stale entries
+    app.last_agent_timestamp = {jid: "t1", "stale@jid": "t2"}
+    app.sessions = {group.folder: "s1", "gone_folder": "s2"}
+
+    app.save_state()
+
+    assert "stale@jid" not in app.last_agent_timestamp
+    assert jid in app.last_agent_timestamp
+    assert "gone_folder" not in app.sessions
+    assert group.folder in app.sessions
+
+    # Verify persisted copy is also pruned
+    raw = db.get_router_state("last_agent_timestamp")
+    assert "stale@jid" not in json.loads(raw)

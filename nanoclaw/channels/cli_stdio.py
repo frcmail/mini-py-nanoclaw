@@ -64,7 +64,10 @@ class CliStdioChannel:
 
     def _read_loop(self) -> None:
         while not self._stop_event.is_set():
-            line = self._input_stream.readline()
+            try:
+                line = self._input_stream.readline()
+            except OSError:
+                break
             if line == "":
                 # Interactive stdin may temporarily have no completed line.
                 if self._input_stream is sys.stdin:

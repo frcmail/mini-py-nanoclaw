@@ -55,3 +55,30 @@ def test_container_timeout_clamped_upper_bound(monkeypatch) -> None:
     monkeypatch.setenv("CONTAINER_TIMEOUT", "999999999")
     reloaded = importlib.reload(config_module)
     assert reloaded.CONTAINER_TIMEOUT == 3600000
+
+
+def test_detect_proxy_bind_host_linux_fallback_is_localhost(monkeypatch) -> None:
+    import nanoclaw.config as config_module
+
+    class _BrokenSocket:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def settimeout(self, _timeout):
+            return None
+
+        def connect(self, _addr):
+            raise OSError("unreachable")
+
+    monkeypatch.setattr(config_module.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(config_module.Path, "exists", lambda self: False)
+    monkeypatch.setattr(config_module.socket, "socket", lambda *args, **kwargs: _BrokenSocket())
+    config_module._detect_proxy_bind_host.cache_clear()
+
+    try:
+        assert config_module._detect_proxy_bind_host() == "127.0.0.1"
+    finally:
+        config_module._detect_proxy_bind_host.cache_clear()

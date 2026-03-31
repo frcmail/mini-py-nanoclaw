@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import logging
 import re
 from datetime import datetime, timezone
 from functools import lru_cache
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+logger = logging.getLogger("nanoclaw")
 
 _VALID_TZ_RE = re.compile(r"^[A-Za-z0-9/_+\-]{1,64}$")
 
@@ -33,6 +36,7 @@ def format_local_time(utc_iso: str, tz_name: str) -> str:
     dt_utc = _parse_iso_timestamp(utc_iso)
     tz = _safe_zone_info(tz_name)
     if tz is None:
+        logger.warning("timezone: invalid or unknown TZ '%s', using local timezone", tz_name)
         tz = datetime.now().astimezone().tzinfo or timezone.utc
 
     local = dt_utc.astimezone(tz)

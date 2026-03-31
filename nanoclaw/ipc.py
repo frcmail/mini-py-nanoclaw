@@ -75,7 +75,7 @@ class IpcWatcher:
                 )
                 for jid, group in groups.items()
             ]
-            write_groups_snapshot(source_group, is_main, available, set(groups.keys()))
+            write_groups_snapshot(source_group, is_main, available)
 
     async def _process_messages(
         self,

@@ -34,3 +34,10 @@ def test_read_env_file_filters_keys(tmp_path) -> None:
     env.write_text("A=1\nB=2\nC=3\n", encoding="utf-8")
     result = read_env_file(["B"], env_path=env)
     assert result == {"B": "2"}
+
+
+def test_read_env_file_handles_non_utf8(tmp_path) -> None:
+    env = tmp_path / ".env"
+    env.write_bytes(b"\x80\x81\x82=bad\n")
+    result = read_env_file(["FOO"], env_path=env)
+    assert result == {}

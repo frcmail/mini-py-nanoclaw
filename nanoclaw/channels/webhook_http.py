@@ -44,7 +44,11 @@ class WebhookHttpChannel:
     ) -> None:
         self._opts = opts
         self._host = host or os.getenv("NANOCLAW_WEBHOOK_HOST", "127.0.0.1")
-        self._port = int(port if port is not None else os.getenv("NANOCLAW_WEBHOOK_PORT", "8787"))
+        raw_port = int(port if port is not None else os.getenv("NANOCLAW_WEBHOOK_PORT", "8787"))
+        allow_ephemeral_port = port is not None and raw_port == 0
+        if not allow_ephemeral_port and not (1 <= raw_port <= 65535):
+            raise ValueError(f"webhook port out of range: {raw_port}")
+        self._port = raw_port
         self._token = _normalize_token(token if token is not None else os.getenv("NANOCLAW_WEBHOOK_TOKEN"))
         self._outbound_url = outbound_url if outbound_url is not None else os.getenv("NANOCLAW_WEBHOOK_OUTBOUND_URL")
         self._base_dir = base_dir or (DATA_DIR / "channels" / "webhook")

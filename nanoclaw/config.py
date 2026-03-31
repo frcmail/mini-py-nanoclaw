@@ -92,14 +92,14 @@ def _detect_proxy_bind_host() -> str:
     if Path("/proc/sys/fs/binfmt_misc/WSLInterop").exists():
         return "127.0.0.1"
 
-    # Best effort for Linux: bind docker bridge if available.
+    # Best effort for Linux: detect local IP for Docker bridge.
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.settimeout(5)
             s.connect(("8.8.8.8", 80))
-            _ = s.getsockname()[0]
     except OSError:
         pass
-    return "0.0.0.0"  # noqa: S104
+    return "127.0.0.1"
 
 
 PROXY_BIND_HOST = _detect_proxy_bind_host()

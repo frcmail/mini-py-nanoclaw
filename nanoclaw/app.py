@@ -84,6 +84,14 @@ class NanoClawApp:
         self.registered_groups = self.db.get_all_registered_groups()
 
     def save_state(self) -> None:
+        # Prune entries for groups that are no longer registered, but only once
+        # group state has been loaded or explicitly registered.
+        if self.registered_groups:
+            active_jids = set(self.registered_groups.keys())
+            self.last_agent_timestamp = {k: v for k, v in self.last_agent_timestamp.items() if k in active_jids}
+            active_folders = {g.folder for g in self.registered_groups.values()}
+            self.sessions = {k: v for k, v in self.sessions.items() if k in active_folders}
+
         self.db.set_router_state("last_timestamp", self.last_timestamp)
         self.db.set_router_state("last_agent_timestamp", json.dumps(self.last_agent_timestamp))
 
@@ -266,6 +274,7 @@ class NanoClawApp:
 
         channel = find_channel(self.channels, chat_jid)
         if channel is None:
+            logger.warning("process_group_messages: no channel for jid=%s", chat_jid)
             return True
 
         since = self.last_agent_timestamp.get(chat_jid, "")
@@ -310,7 +319,7 @@ class NanoClawApp:
                     for t in tasks
                 ],
             )
-            write_groups_snapshot(group.folder, is_main, self.get_available_groups(), set(self.registered_groups.keys()))
+            write_groups_snapshot(group.folder, is_main, self.get_available_groups())
 
         async def _on_output(output: ContainerOutput) -> None:
             nonlocal output_sent, had_error

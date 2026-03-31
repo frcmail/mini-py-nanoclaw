@@ -86,6 +86,7 @@ class TaskScheduler:
     async def stop(self) -> None:
         self._stopped = True
         if self._runner is not None:
+            self._runner.cancel()
             await asyncio.wait({self._runner}, timeout=1.0)
 
     async def run_once(self) -> None:

@@ -36,5 +36,9 @@ RUN mkdir -p /workspace/group /workspace/global /workspace/extra /workspace/ipc/
 
 RUN printf '#!/bin/bash\nset -e\ncat > /tmp/input.json\npython -m nanoclaw.agent_runner < /tmp/input.json\n' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
+RUN groupadd -r nanoclaw && useradd -r -g nanoclaw nanoclaw \
+    && chown -R nanoclaw:nanoclaw /workspace /app
+USER nanoclaw
+
 WORKDIR /workspace/group
 ENTRYPOINT ["/app/entrypoint.sh"]

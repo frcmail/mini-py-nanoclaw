@@ -44,6 +44,8 @@ class NanoClawDB:
         self._conn.close()
 
     def _create_schema(self) -> None:
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA busy_timeout=5000")
         self._conn.executescript(
             """
             CREATE TABLE IF NOT EXISTS chats (

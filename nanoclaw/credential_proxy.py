@@ -12,6 +12,8 @@ from .config import PROXY_BIND_HOST
 from .env import read_env_file
 from .logger import logger
 
+_MAX_UPSTREAM_RESPONSE_BYTES = 10 * 1024 * 1024
+
 
 @dataclass
 class CredentialProxyServer:
@@ -90,7 +92,25 @@ def start_credential_proxy(port: int, host: str = PROXY_BIND_HOST) -> Credential
 
             try:
                 with urllib.request.urlopen(request, timeout=30) as response:
-                    response_body = response.read()
+                    content_length = response.headers.get("Content-Length")
+                    if content_length is not None and int(content_length) > _MAX_UPSTREAM_RESPONSE_BYTES:
+                        self.send_response(502)
+                        err = b"Upstream response too large"
+                        self.send_header("Content-Type", "text/plain")
+                        self.send_header("Content-Length", str(len(err)))
+                        self.end_headers()
+                        self.wfile.write(err)
+                        return
+
+                    response_body = response.read(_MAX_UPSTREAM_RESPONSE_BYTES + 1)
+                    if len(response_body) > _MAX_UPSTREAM_RESPONSE_BYTES:
+                        self.send_response(502)
+                        err = b"Upstream response too large"
+                        self.send_header("Content-Type", "text/plain")
+                        self.send_header("Content-Length", str(len(err)))
+                        self.end_headers()
+                        self.wfile.write(err)
+                        return
                     self.send_response(response.status)
                     for key, value in response.headers.items():
                         if key.lower() in {"connection", "transfer-encoding"}:

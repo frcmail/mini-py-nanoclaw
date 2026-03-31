@@ -268,3 +268,27 @@ def test_webhook_http_logs_outbound_callback_failure(tmp_path, monkeypatch) -> N
 
     assert len(warnings) == 1
     assert "webhook outbound callback failed" in warnings[0]
+
+
+def test_webhook_channel_rejects_invalid_port() -> None:
+    with pytest.raises(ValueError, match="webhook port out of range"):
+        WebhookHttpChannel(
+            ChannelOpts(
+                on_message=lambda jid, msg: None,
+                on_chat_metadata=lambda jid, ts, name, ch, is_group: None,
+                registered_groups=lambda: {},
+            ),
+            port=-1,
+            token="tok",
+        )
+
+    with pytest.raises(ValueError, match="webhook port out of range"):
+        WebhookHttpChannel(
+            ChannelOpts(
+                on_message=lambda jid, msg: None,
+                on_chat_metadata=lambda jid, ts, name, ch, is_group: None,
+                registered_groups=lambda: {},
+            ),
+            port=70000,
+            token="tok",
+        )

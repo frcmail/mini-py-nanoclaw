@@ -17,7 +17,11 @@ def read_env_file(keys: list[str], env_path: Path | None = None) -> dict[str, st
 
     wanted = set(keys)
     values: dict[str, str] = {}
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except UnicodeDecodeError:
+        return {}
+    for raw_line in lines:
         line = raw_line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue

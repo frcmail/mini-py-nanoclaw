@@ -368,3 +368,24 @@ async def test_stop_sets_flag_and_awaits() -> None:
     await asyncio.sleep(0.02)
     await scheduler.stop()
     assert scheduler._stopped is True
+
+
+@pytest.mark.asyncio
+async def test_stop_cancels_runner() -> None:
+    scheduler = TaskScheduler(
+        db=SimpleNamespace(get_due_tasks=lambda: []),
+        queue=SimpleNamespace(),
+        registered_groups=lambda: {},
+        get_sessions=lambda: {},
+        run_task_fn=lambda t, s: None,
+        poll_interval_ms=1000,
+    )
+
+    scheduler.start()
+    assert scheduler._runner is not None
+    runner = scheduler._runner
+
+    await asyncio.sleep(0)
+    await scheduler.stop()
+
+    assert runner.cancelled() or runner.done()
